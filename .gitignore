@@ -43,3 +43,7 @@ setup.sh
 
 # Accidental build artifacts
 *.xcarchive
+
+# Configuration files with secrets
+Config.xcconfig
+
