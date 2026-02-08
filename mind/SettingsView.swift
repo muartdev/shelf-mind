@@ -70,7 +70,6 @@ struct SettingsView: View {
                             Text("Appearance")
                                 .font(.headline)
                                 .foregroundStyle(.secondary)
-                                .padding(.horizontal)
                             
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
@@ -86,9 +85,10 @@ struct SettingsView: View {
                                         )
                                     }
                                 }
-                                .padding(.horizontal)
                             }
                         }
+                        .padding()
+                        .settingsCardStyle()
                         
                         // Notifications
                         VStack(alignment: .leading, spacing: 16) {

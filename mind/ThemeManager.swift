@@ -39,7 +39,18 @@ enum AppTheme: String, CaseIterable, Identifiable {
         }
     }
     
-    var displayName: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .bluePurpleLight:
+            return "Blue Purple"
+        case .orangePinkLight:
+            return "Orange Pink"
+        case .bluePurpleDark:
+            return "Blue Purple"
+        case .orangePinkDark:
+            return "Orange Pink"
+        }
+    }
     
     var primaryColor: Color {
         switch self {
