@@ -146,28 +146,63 @@ struct ContentView: View {
     
     private var emptyStateView: some View {
         VStack(spacing: 20) {
-            Image(systemName: "bookmark.slash")
+            Image(systemName: selectedCategory != nil || showOnlyUnread ? "tray" : "bookmark.slash")
                 .font(.system(size: 60))
                 .foregroundStyle(.secondary)
             
-            Text("No Bookmarks Yet")
+            Text(emptyStateTitle)
                 .font(.title2)
                 .bold()
             
-            Text("Save interesting content from X, articles, and videos to read later")
+            Text(emptyStateMessage)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
             
-            Button(action: { showingAddBookmark = true }) {
-                Label("Add Your First Bookmark", systemImage: "plus")
-                    .font(.headline)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
+            if selectedCategory != nil || showOnlyUnread {
+                Button(action: clearFilters) {
+                    Label("Clear Filters", systemImage: "xmark.circle")
+                        .font(.headline)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                }
+                .glassButtonStyle()
+            } else {
+                Button(action: { showingAddBookmark = true }) {
+                    Label("Add Your First Bookmark", systemImage: "plus")
+                        .font(.headline)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                }
+                .glassButtonStyle()
             }
-            .glassButtonStyle()
         }
+    }
+    
+    private var emptyStateTitle: String {
+        if selectedCategory != nil {
+            return "No Bookmarks in This Category"
+        } else if showOnlyUnread {
+            return "All Caught Up!"
+        } else {
+            return "No Bookmarks Yet"
+        }
+    }
+    
+    private var emptyStateMessage: String {
+        if selectedCategory != nil {
+            return "Try adding a bookmark with this category or clear the filter to see all"
+        } else if showOnlyUnread {
+            return "You've read all your bookmarks. Great job!"
+        } else {
+            return "Save interesting content from X, articles, and videos to read later"
+        }
+    }
+    
+    private func clearFilters() {
+        selectedCategory = nil
+        showOnlyUnread = false
     }
     
     @ToolbarContentBuilder
