@@ -315,34 +315,31 @@ struct CategoryButton: View {
                 action()
             }
         }) {
-            HStack(spacing: 10) {
+            VStack(spacing: 8) {
                 Circle()
                     .fill(category.color.gradient)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
                     .overlay {
                         Image(systemName: category.icon)
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: 20, weight: .semibold))
                             .foregroundStyle(.white)
                     }
                 
                 Text(category.shortName)
-                    .font(.subheadline)
+                    .font(.caption)
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
-                
-                Spacer()
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(category.color)
-                        .font(.title3)
+                        .font(.body)
                 }
             }
-            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 60)
+        .frame(height: 100)
         .categoryButtonStyle(isSelected: isSelected, color: category.color)
     }
 }
