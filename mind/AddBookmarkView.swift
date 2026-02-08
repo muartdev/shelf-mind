@@ -329,8 +329,9 @@ struct CategoryButton: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
+                    .lineLimit(1)
                 
-                Spacer()
+                Spacer(minLength: 0)
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
@@ -340,8 +341,9 @@ struct CategoryButton: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, minHeight: 64)
         }
+        .frame(maxWidth: .infinity)
+        .frame(height: 64)
         .categoryButtonStyle(isSelected: isSelected, color: category.color)
     }
 }
