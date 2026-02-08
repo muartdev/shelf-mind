@@ -46,8 +46,8 @@ struct mindApp: App {
             .environment(themeManager)
             .preferredColorScheme(themeManager.currentTheme.isDark ? .dark : .light)
             .tint(themeManager.currentTheme.accentColor)
-            .onAppear {
-                authManager.loadCurrentUser()
+            .task {
+                await authManager.loadCurrentUser()
             }
         }
         .modelContainer(sharedModelContainer)

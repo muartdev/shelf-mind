@@ -6,102 +6,191 @@
 //
 
 import Foundation
-// import Supabase // Will be added via SPM
+import Supabase
 
 @Observable
 @MainActor
 final class SupabaseManager {
     static let shared = SupabaseManager()
     
-    // Supabase credentials - REPLACE WITH YOUR CREDENTIALS
-    private let supabaseURL = "YOUR_SUPABASE_URL" // e.g., https://xxxxx.supabase.co
-    private let supabaseKey = "YOUR_SUPABASE_ANON_KEY"
-    
-    // var client: SupabaseClient // Will be initialized when package is added
+    let client: SupabaseClient
     
     private init() {
-        // Initialize Supabase client
-        // self.client = SupabaseClient(supabaseURL: URL(string: supabaseURL)!, supabaseKey: supabaseKey)
+        // Initialize Supabase client with config
+        self.client = SupabaseClient(
+            supabaseURL: URL(string: Config.supabaseURL)!,
+            supabaseKey: Config.supabaseAnonKey
+        )
     }
     
     // MARK: - Authentication
     
     func signUp(email: String, password: String, name: String) async throws -> User {
-        // TODO: Implement Supabase sign up
-        // let authResponse = try await client.auth.signUp(email: email, password: password)
+        let authResponse = try await client.auth.signUp(
+            email: email,
+            password: password,
+            data: ["name": .string(name)]
+        )
         
-        // Create user profile
-        // let user = User(id: authResponse.user.id, email: email, name: name)
-        // try await client.from("users").insert(user).execute()
+        // User profile is auto-created by database trigger
+        let user = User(
+            id: authResponse.user.id,
+            email: email,
+            name: name
+        )
         
-        // Return demo user for now
-        return User(email: email, name: name)
+        return user
     }
     
     func signIn(email: String, password: String) async throws -> User {
-        // TODO: Implement Supabase sign in
-        // let authResponse = try await client.auth.signIn(email: email, password: password)
+        let authResponse = try await client.auth.signIn(
+            email: email,
+            password: password
+        )
         
         // Fetch user profile
-        // let response = try await client.from("users")
-        //     .select()
-        //     .eq("id", value: authResponse.user.id)
-        //     .single()
-        //     .execute()
+        let response: UserProfile = try await client.from("users")
+            .select()
+            .eq("id", value: authResponse.user.id.uuidString)
+            .single()
+            .execute()
+            .value
         
-        // Return demo user for now
-        return User(email: email, name: "Demo User")
+        let user = User(
+            id: response.id,
+            email: response.email,
+            name: response.name,
+            avatarURL: response.avatar_url,
+            createdAt: response.created_at
+        )
+        
+        return user
     }
     
     func signOut() async throws {
-        // TODO: Implement Supabase sign out
-        // try await client.auth.signOut()
+        try await client.auth.signOut()
     }
     
     func getCurrentUser() async throws -> User? {
-        // TODO: Get current authenticated user
-        // guard let session = client.auth.session else { return nil }
+        // Try to get current session
+        let session: Session
+        do {
+            session = try await client.auth.session
+        } catch {
+            // No active session
+            return nil
+        }
         
-        // let response = try await client.from("users")
-        //     .select()
-        //     .eq("id", value: session.user.id)
-        //     .single()
-        //     .execute()
+        let response: UserProfile = try await client.from("users")
+            .select()
+            .eq("id", value: session.user.id.uuidString)
+            .single()
+            .execute()
+            .value
         
-        return nil
+        let user = User(
+            id: response.id,
+            email: response.email,
+            name: response.name,
+            avatarURL: response.avatar_url,
+            createdAt: response.created_at
+        )
+        
+        return user
     }
     
     // MARK: - Bookmarks
     
-    func fetchBookmarks(userId: String) async throws -> [Bookmark] {
-        // TODO: Fetch bookmarks from Supabase
-        // let response = try await client.from("bookmarks")
-        //     .select()
-        //     .eq("user_id", value: userId)
-        //     .order("created_at", ascending: false)
-        //     .execute()
+    func fetchBookmarks(userId: UUID) async throws -> [BookmarkDTO] {
+        let response: [BookmarkDTO] = try await client.from("bookmarks")
+            .select()
+            .eq("user_id", value: userId.uuidString)
+            .order("created_at", ascending: false)
+            .execute()
+            .value
         
-        return []
+        return response
     }
     
-    func createBookmark(_ bookmark: Bookmark, userId: String) async throws {
-        // TODO: Create bookmark in Supabase
-        // try await client.from("bookmarks").insert(bookmark).execute()
+    func createBookmark(_ bookmark: Bookmark, userId: UUID) async throws {
+        let dto = BookmarkDTO(
+            id: bookmark.id,
+            user_id: userId,
+            title: bookmark.title,
+            url: bookmark.url,
+            notes: bookmark.notes,
+            category: bookmark.category,
+            tags: bookmark.tags,
+            is_read: bookmark.isRead,
+            thumbnail_url: bookmark.thumbnailURL
+        )
+        
+        try await client.from("bookmarks")
+            .insert(dto)
+            .execute()
     }
     
     func updateBookmark(_ bookmark: Bookmark) async throws {
-        // TODO: Update bookmark in Supabase
-        // try await client.from("bookmarks")
-        //     .update(bookmark)
-        //     .eq("id", value: bookmark.id)
-        //     .execute()
+        let dto = BookmarkDTO(
+            id: bookmark.id,
+            user_id: nil, // Not needed for update
+            title: bookmark.title,
+            url: bookmark.url,
+            notes: bookmark.notes,
+            category: bookmark.category,
+            tags: bookmark.tags,
+            is_read: bookmark.isRead,
+            thumbnail_url: bookmark.thumbnailURL
+        )
+        
+        try await client.from("bookmarks")
+            .update(dto)
+            .eq("id", value: bookmark.id.uuidString)
+            .execute()
     }
     
     func deleteBookmark(id: UUID) async throws {
-        // TODO: Delete bookmark from Supabase
-        // try await client.from("bookmarks")
-        //     .delete()
-        //     .eq("id", value: id)
-        //     .execute()
+        try await client.from("bookmarks")
+            .delete()
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+}
+
+// MARK: - DTOs (Data Transfer Objects)
+
+struct UserProfile: Codable {
+    let id: UUID
+    let email: String
+    let name: String
+    let avatar_url: String?
+    let created_at: Date
+}
+
+struct BookmarkDTO: Codable {
+    let id: UUID
+    let user_id: UUID?
+    let title: String
+    let url: String
+    let notes: String
+    let category: String
+    let tags: [String]
+    let is_read: Bool
+    let thumbnail_url: String?
+    let created_at: Date?
+    let updated_at: Date?
+    
+    init(id: UUID, user_id: UUID?, title: String, url: String, notes: String, category: String, tags: [String], is_read: Bool, thumbnail_url: String?, created_at: Date? = nil, updated_at: Date? = nil) {
+        self.id = id
+        self.user_id = user_id
+        self.title = title
+        self.url = url
+        self.notes = notes
+        self.category = category
+        self.tags = tags
+        self.is_read = is_read
+        self.thumbnail_url = thumbnail_url
+        self.created_at = created_at
+        self.updated_at = updated_at
     }
 }

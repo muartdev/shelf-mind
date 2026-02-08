@@ -16,97 +16,80 @@ final class AuthManager {
     var isLoading = false
     var error: String?
     
-    // For now, simple local auth
-    // Later: Supabase integration
+    private let supabase = SupabaseManager.shared
     
     func signIn(email: String, password: String) async {
         isLoading = true
         error = nil
         
-        // Simulate API call
-        try? await Task.sleep(for: .seconds(1))
-        
-        // Simple validation
-        guard email.contains("@") else {
-            error = "Invalid email address"
-            isLoading = false
-            return
+        do {
+            let user = try await supabase.signIn(email: email, password: password)
+            currentUser = user
+            isAuthenticated = true
+            saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
+        } catch {
+            self.error = error.localizedDescription
         }
         
-        guard password.count >= 6 else {
-            error = "Password must be at least 6 characters"
-            isLoading = false
-            return
-        }
-        
-        // Create user
-        currentUser = User(
-            email: email,
-            name: email.components(separatedBy: "@").first ?? "User"
-        )
-        
-        isAuthenticated = true
         isLoading = false
-        
-        // Save to UserDefaults
-        UserDefaults.standard.set(true, forKey: "isAuthenticated")
-        UserDefaults.standard.set(email, forKey: "userEmail")
     }
     
     func signUp(email: String, name: String, password: String) async {
         isLoading = true
         error = nil
         
-        // Simulate API call
-        try? await Task.sleep(for: .seconds(1))
-        
-        // Simple validation
-        guard email.contains("@") else {
-            error = "Invalid email address"
-            isLoading = false
-            return
+        do {
+            let user = try await supabase.signUp(email: email, password: password, name: name)
+            currentUser = user
+            isAuthenticated = true
+            saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
+        } catch {
+            self.error = error.localizedDescription
         }
         
-        guard !name.isEmpty else {
-            error = "Name is required"
-            isLoading = false
-            return
-        }
-        
-        guard password.count >= 6 else {
-            error = "Password must be at least 6 characters"
-            isLoading = false
-            return
-        }
-        
-        // Create user
-        currentUser = User(email: email, name: name)
-        isAuthenticated = true
         isLoading = false
+    }
+    
+    func signOut() {
+        Task {
+            try? await supabase.signOut()
+        }
         
-        // Save to UserDefaults
+        currentUser = nil
+        isAuthenticated = false
+        clearSession()
+    }
+    
+    func loadCurrentUser() async {
+        // Check local session first
+        guard UserDefaults.standard.bool(forKey: "isAuthenticated") else { return }
+        
+        // Try to get current user from Supabase
+        do {
+            if let user = try await supabase.getCurrentUser() {
+                currentUser = user
+                isAuthenticated = true
+            } else {
+                clearSession()
+            }
+        } catch {
+            clearSession()
+        }
+    }
+    
+    // MARK: - Session Management
+    
+    private func saveSession(userId: String, email: String, name: String) {
         UserDefaults.standard.set(true, forKey: "isAuthenticated")
+        UserDefaults.standard.set(userId, forKey: "userId")
         UserDefaults.standard.set(email, forKey: "userEmail")
         UserDefaults.standard.set(name, forKey: "userName")
     }
     
-    func signOut() {
-        currentUser = nil
-        isAuthenticated = false
-        
-        // Clear UserDefaults
+    private func clearSession() {
         UserDefaults.standard.removeObject(forKey: "isAuthenticated")
+        UserDefaults.standard.removeObject(forKey: "userId")
         UserDefaults.standard.removeObject(forKey: "userEmail")
         UserDefaults.standard.removeObject(forKey: "userName")
-    }
-    
-    func loadCurrentUser() {
-        if UserDefaults.standard.bool(forKey: "isAuthenticated") {
-            let email = UserDefaults.standard.string(forKey: "userEmail") ?? ""
-            let name = UserDefaults.standard.string(forKey: "userName") ?? ""
-            
-            currentUser = User(email: email, name: name)
-            isAuthenticated = true
-        }
     }
 }

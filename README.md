@@ -1,151 +1,209 @@
-# 🧠 MindShelf - Modern Bookmark Manager
+# 📚 MindShelf - Modern Bookmark Manager
 
-<img src="https://img.shields.io/badge/iOS-17.0+-blue.svg" alt="iOS 17.0+">
-<img src="https://img.shields.io/badge/Swift-5.9+-orange.svg" alt="Swift 5.9+">
-<img src="https://img.shields.io/badge/SwiftUI-Liquid_Glass-purple.svg" alt="SwiftUI Liquid Glass">
+A minimalist, modern SwiftUI bookmark management app for iOS, powered by Supabase backend.
 
-A beautiful, modern bookmark manager for iOS featuring Apple's new Liquid Glass design language. Save and organize content from X (Twitter), articles, videos, and more to read later.
+![iOS](https://img.shields.io/badge/iOS-17.0%2B-blue)
+![Swift](https://img.shields.io/badge/Swift-6.0-orange)
+![SwiftUI](https://img.shields.io/badge/SwiftUI-✓-green)
+![Supabase](https://img.shields.io/badge/Supabase-✓-brightgreen)
 
 ## ✨ Features
 
-- 🎨 **Liquid Glass Design** - Beautiful iOS 26+ native glass effects with Material fallbacks
-- 📚 **Smart Organization** - 6 categories (Article, Video, Tweet, Research, Tutorial, General)
-- 🔍 **Powerful Search** - Quick search across titles, URLs, and notes
-- 🏷️ **Filter & Sort** - Filter by category and read status
-- ✅ **Read Tracking** - Mark bookmarks as read/unread
-- 📝 **Rich Metadata** - Titles, notes, dates automatically tracked
-- 💾 **SwiftData Storage** - Modern persistent storage
-- 🎯 **Context Menu Actions** - Quick actions on each bookmark
-- 📱 **Modern SwiftUI** - SwiftData + latest SwiftUI patterns
+### 📱 Core Features
+- **Beautiful UI** - iOS-inspired Material Design with "liquid glass" aesthetic
+- **Smart Organization** - Category-based bookmark management (X, Instagram, YouTube, Articles, Videos, General)
+- **Quick Filters** - Filter by category, read/unread status
+- **Rich Details** - Add notes, tags, and thumbnails to bookmarks
+- **Search** - Find bookmarks quickly with full-text search
+
+### 🎨 User Experience
+- **Modern Themes** - 4 beautiful theme variants (Blue-Purple, Orange-Pink, Light & Dark modes)
+- **Onboarding Flow** - Smooth first-time user experience
+- **Statistics Dashboard** - Track your reading habits
+- **Smart Empty States** - Contextual guidance based on active filters
+
+### 🔐 Backend & Sync
+- **Supabase Integration** - Secure backend with PostgreSQL database
+- **User Authentication** - Email/password sign up & sign in
+- **Row Level Security (RLS)** - User data is isolated and secure
+- **Real-time Sync** - Changes sync across devices
+
+### 🧩 Technical Highlights
+- **SwiftData** - Local persistence for offline support
+- **Observable Pattern** - Modern state management with `@Observable`
+- **Async/Await** - Clean async code with Swift Concurrency
+- **Material Design** - `.ultraThinMaterial`, `.thinMaterial` for depth
+- **Gradient Theming** - Dynamic color schemes with smooth transitions
+
+## 📸 Screenshots
+
+*(Coming soon)*
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Xcode 15.0+
-- iOS 17.0+ (iOS 26.0+ for Liquid Glass effects)
-- macOS Sonoma or later
+- macOS 15.0+ with Xcode 16.1+
+- iOS 17.0+ device or simulator
+- Supabase account (free tier works great)
 
-### Installation
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/mindshelf.git
+cd mindshelf/mind
+```
+
+### 2. Set Up Supabase Backend
+
+Follow the detailed setup guide: **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)**
+
+Quick summary:
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
+2. Run the SQL schema from `supabase-schema.sql` in Supabase SQL Editor
+3. Get your Project URL and Anon Key from Supabase Settings
+
+### 3. Configure Local Environment
+
+Follow the local setup guide: **[LOCAL_SETUP.md](LOCAL_SETUP.md)**
+
+Quick summary:
+1. Copy `Config.xcconfig.example` to `Config.xcconfig`
+2. Add your Supabase credentials to `Config.xcconfig`:
+   ```
+   SUPABASE_URL = https://your-project.supabase.co
+   SUPABASE_ANON_KEY = your_anon_key_here
+   ```
+3. Add Swift Package Dependencies in Xcode (File > Add Package Dependencies)
+   - Supabase: `https://github.com/supabase/supabase-swift`
+   - Select `Auth` and `PostgREST` modules
+4. Link `Config.xcconfig` in Xcode Build Settings
+
+### 4. Build & Run
 
 1. Open `mind.xcodeproj` in Xcode
-2. Select your simulator or device
-3. Press `⌘R` to build and run
+2. Select your target device or simulator
+3. Press `Cmd + R` to build and run
 
-### Project Structure
+## 📂 Project Structure
 
 ```
 mind/
-├── mindApp.swift           # App entry point
-├── Item.swift              # Bookmark model (SwiftData)
-├── ContentView.swift       # Main list view
-├── BookmarkCard.swift      # Card component
-├── AddBookmarkView.swift   # Add bookmark sheet
-└── BookmarkDetailView.swift # Detail & edit view
+├── mind/                        # Main app source
+│   ├── mindApp.swift           # App entry point
+│   ├── Config.swift            # Configuration reader
+│   │
+│   ├── Models/                 # Data models
+│   │   ├── Item.swift          # Bookmark & Category
+│   │   └── User.swift          # User model
+│   │
+│   ├── Managers/               # Business logic
+│   │   ├── AuthManager.swift  # Authentication
+│   │   ├── ThemeManager.swift # Theme management
+│   │   └── SupabaseManager.swift # Supabase API
+│   │
+│   ├── Views/                  # UI screens
+│   │   ├── MainTabView.swift
+│   │   ├── ContentView.swift
+│   │   ├── AddBookmarkView.swift
+│   │   ├── BookmarkDetailView.swift
+│   │   ├── StatisticsView.swift
+│   │   ├── SettingsView.swift
+│   │   ├── OnboardingView.swift
+│   │   └── AuthView.swift
+│   │
+│   ├── Components/             # Reusable UI
+│   │   ├── BookmarkCard.swift
+│   │   └── TagView.swift
+│   │
+│   └── Assets.xcassets/        # App assets
+│
+├── Config.xcconfig             # Environment config (gitignored)
+├── Config.xcconfig.example     # Config template
+├── Info.plist                  # App info & config keys
+└── supabase-schema.sql         # Database schema
+
 ```
 
-## 📱 Usage
+## 🔧 Technologies Used
 
-### Adding a Bookmark
-1. Tap the "+" button in the top right
-2. Enter the title, URL, and optional notes
-3. Select a category
-4. Tap "Save"
+- **Swift 6.0** - Modern Swift with strict concurrency
+- **SwiftUI** - Declarative UI framework
+- **SwiftData** - Apple's data persistence framework
+- **Supabase Swift SDK** - Backend integration
+  - `Auth` - User authentication
+  - `PostgREST` - Database queries
+- **Observation Framework** - Modern state management with `@Observable`
 
-### Managing Bookmarks
-- **Tap a card** to view details
-- **Long press** for context menu (Mark as Read, Open, Delete)
-- **Use search** to find bookmarks
-- **Tap filter chips** to filter by category or unread status
+## 🎨 Design System
 
-### Detail View
-- View full bookmark information
-- Edit any field
-- Mark as read/unread
-- Open in Safari
-- Share bookmark
-- Delete bookmark
+### Themes
+- **Blue-Purple** (Light/Dark)
+- **Orange-Pink** (Light/Dark)
 
-## 🎨 Design Features
+### UI Components
+- **Glass Morphism** - Translucent `.ultraThinMaterial` backgrounds
+- **Stroke Borders** - Subtle white `.strokeBorder()` outlines
+- **Multi-layer Shadows** - Depth with `.shadow()` layers
+- **Gradient Accents** - Smooth `LinearGradient` transitions
+- **Dynamic Typography** - SF Pro system fonts with weight variations
 
-### Liquid Glass Effects (iOS 26+)
-- Glass effect cards with translucent backgrounds
-- Interactive glass buttons
-- GlassEffectContainer for grouped elements
-- Smooth animations
+## 🔐 Security
 
-### Fallback Design (iOS 17-25)
-- Material backgrounds
-- Standard button styles
-- Same functionality with different visuals
+- **Environment Variables** - Sensitive keys stored in `Config.xcconfig` (gitignored)
+- **Row Level Security (RLS)** - Supabase policies enforce user isolation
+- **No Hardcoded Secrets** - All credentials in config files
+- **Config Template** - `Config.xcconfig.example` for easy setup
 
-## 🛠️ Technical Details
+## 📝 Configuration Files
 
-### SwiftData
-This app uses SwiftData for persistent storage:
-- `@Model` macro for Bookmark
-- `@Query` for reactive updates
-- SwiftData ModelContext for CRUD operations
+### `.gitignore`
+- Excludes `Config.xcconfig` to prevent credential leaks
+- Ignores Xcode build artifacts
 
-### SwiftUI Best Practices
-- Modern property wrappers
-- LazyVStack for performance
-- Stable ForEach identity
-- Proper animations
-- Modern APIs (foregroundStyle, clipShape, etc.)
+### `Config.xcconfig.example`
+- Template for required environment variables
+- Safe to commit to version control
 
-## 🎯 Customization
+### `Config.swift`
+- Safely reads config values from `Info.plist`
+- Crashes gracefully if keys are missing
 
-### Adding New Categories
-Edit `Item.swift` and add new cases to the `Category` enum:
+## 🚧 Roadmap
 
-```swift
-enum Category: String, CaseIterable {
-    case yourNewCategory = "Your New Category"
-    // Add icon in the icon property
-}
-```
-
-### Changing Colors
-Modify background gradients in views:
-
-```swift
-LinearGradient(
-    colors: [.blue.opacity(0.1), .purple.opacity(0.1)],
-    startPoint: .topLeading,
-    endPoint: .bottomTrailing
-)
-```
-
-## 🔧 Testing
-
-1. Build and run in Xcode (⌘R)
-2. Sample data will be empty initially
-3. Add bookmarks using the "+" button
-4. Test filtering, search, and detail views
-5. For iOS 26 Liquid Glass: Use iOS 26+ simulator
-6. For iOS 17-25: Material fallbacks will be used
-
-## 📚 Future Enhancements
-
-- [ ] iCloud sync
-- [ ] Browser extension
-- [ ] Tags system
-- [ ] Export/Import
+- [ ] URL metadata fetching (Open Graph)
+- [ ] Browser extension for easy bookmark saving
 - [ ] Widget support
-- [ ] Share Extension (Safari)
-- [ ] Dark mode customization
+- [ ] iCloud sync as alternative to Supabase
+- [ ] Import/Export bookmarks (JSON, CSV)
+- [ ] Sharing bookmarks with friends
+- [ ] Dark mode auto-switching based on time
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is open source and available under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👤 Author
+
+**Murat**
+- GitHub: [@YOUR_USERNAME](https://github.com/YOUR_USERNAME)
+- Email: muartmac@gmail.com
 
 ## 🙏 Acknowledgments
 
-- Built with SwiftUI Expert Skill best practices
-- Follows Apple's Human Interface Guidelines
-- Uses iOS 26+ Liquid Glass design language
-- Implements modern SwiftData patterns
+- [Supabase](https://supabase.com) - For the amazing backend platform
+- [Apple](https://developer.apple.com) - For SwiftUI & SwiftData
+- Icons by [SF Symbols](https://developer.apple.com/sf-symbols/)
 
 ---
 
-Made with ❤️ using SwiftUI and Liquid Glass
+**Made with ❤️ and SwiftUI**

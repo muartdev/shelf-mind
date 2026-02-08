@@ -6,13 +6,32 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		FBAE2BF62F390B5500E60277 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = FBAE2BF52F390B5500E60277 /* Auth */; };
+		FBAE2BF82F390B5D00E60277 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = FBAE2BF72F390B5D00E60277 /* PostgREST */; };
+		FBAE2BFA2F390B5D00E60277 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = FBAE2BF92F390B5D00E60277 /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		FBE576202F38BFEE0004BFA7 /* mind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = mind.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FBAE2BF22F3906D700E60277 /* Exceptions for "mind" folder in "mind" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FBE5761F2F38BFEE0004BFA7 /* mind */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FBE576222F38BFEE0004BFA7 /* mind */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FBAE2BF22F3906D700E60277 /* Exceptions for "mind" folder in "mind" target */,
+			);
 			path = mind;
 			sourceTree = "<group>";
 		};
@@ -23,16 +42,27 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FBAE2BF82F390B5D00E60277 /* PostgREST in Frameworks */,
+				FBAE2BF62F390B5500E60277 /* Auth in Frameworks */,
+				FBAE2BFA2F390B5D00E60277 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		FBAE2BF42F390B5500E60277 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		FBE576172F38BFEE0004BFA7 = {
 			isa = PBXGroup;
 			children = (
 				FBE576222F38BFEE0004BFA7 /* mind */,
+				FBAE2BF42F390B5500E60277 /* Frameworks */,
 				FBE576212F38BFEE0004BFA7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -65,6 +95,9 @@
 			);
 			name = mind;
 			packageProductDependencies = (
+				FBAE2BF52F390B5500E60277 /* Auth */,
+				FBAE2BF72F390B5D00E60277 /* PostgREST */,
+				FBAE2BF92F390B5D00E60277 /* Supabase */,
 			);
 			productName = mind;
 			productReference = FBE576202F38BFEE0004BFA7 /* mind.app */;
@@ -94,6 +127,9 @@
 			);
 			mainGroup = FBE576172F38BFEE0004BFA7;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FBAE2BF32F39093500E60277 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FBE576212F38BFEE0004BFA7 /* Products */;
 			projectDirPath = "";
@@ -253,6 +289,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = mind/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -284,6 +321,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = mind/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -328,6 +366,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FBAE2BF32F39093500E60277 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FBAE2BF52F390B5500E60277 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FBAE2BF32F39093500E60277 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		FBAE2BF72F390B5D00E60277 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FBAE2BF32F39093500E60277 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		FBAE2BF92F390B5D00E60277 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FBAE2BF32F39093500E60277 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = FBE576182F38BFEE0004BFA7 /* Project object */;
 }
