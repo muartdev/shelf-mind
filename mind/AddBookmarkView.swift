@@ -289,8 +289,16 @@ extension View {
     func formGlassStyle() -> some View {
         self
             .padding()
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
-            .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
+            .background(
+                .ultraThinMaterial,
+                in: RoundedRectangle(cornerRadius: 20)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 8)
+            .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
     
     @ViewBuilder
@@ -302,12 +310,17 @@ extension View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(color, lineWidth: 2)
+                    .strokeBorder(color, lineWidth: 2)
             )
+            .shadow(color: color.opacity(0.3), radius: 8, y: 4)
         } else {
             self.background(
                 .ultraThinMaterial,
                 in: RoundedRectangle(cornerRadius: 12)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(.white.opacity(0.1), lineWidth: 1)
             )
         }
     }

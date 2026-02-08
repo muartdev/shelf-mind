@@ -59,7 +59,15 @@ struct AuthView: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding()
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .background(
+                        .ultraThinMaterial,
+                        in: RoundedRectangle(cornerRadius: 12)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
                     .padding(.horizontal)
                     
                     // Form
@@ -115,7 +123,16 @@ struct AuthView: View {
                         .foregroundStyle(.secondary)
                     }
                     .padding(24)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+                    .background(
+                        .ultraThinMaterial,
+                        in: RoundedRectangle(cornerRadius: 20)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
+                    .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
                     .padding(.horizontal)
                     
                     Spacer()
@@ -149,7 +166,14 @@ extension View {
     func textFieldStyle() -> some View {
         self
             .padding()
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .background(
+                .ultraThinMaterial,
+                in: RoundedRectangle(cornerRadius: 12)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+            )
     }
 }
 
@@ -172,6 +196,8 @@ struct PrimaryButtonStyle: ButtonStyle {
                 )
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: theme.primaryColor.opacity(0.3), radius: 12, x: 0, y: 6)
+            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
             .animation(.smooth, value: configuration.isPressed)
     }

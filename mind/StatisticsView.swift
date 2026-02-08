@@ -42,18 +42,22 @@ struct StatisticsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
-                    // Overview Cards
-                    overviewSection
+                VStack(spacing: 20) {
+                    // Hero Stats
+                    heroSection
                     
-                    // Progress Ring
-                    progressSection
-                    
-                    // Category Breakdown
-                    categorySection
+                    // Quick Overview
+                    quickStatsSection
                     
                     // Activity Chart
-                    activitySection
+                    if !bookmarks.isEmpty {
+                        activitySection
+                    }
+                    
+                    // Category Breakdown
+                    if !categoryStats.isEmpty {
+                        categorySection
+                    }
                 }
                 .padding()
             }
@@ -69,7 +73,96 @@ struct StatisticsView: View {
         }
     }
     
-    // MARK: - Overview Section
+    
+    // MARK: - Hero Section
+    
+    private var heroSection: some View {
+        VStack(spacing: 16) {
+            // Main number display
+            VStack(spacing: 8) {
+                Text("\(totalBookmarks)")
+                    .font(.system(size: 72, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                
+                Text("Total Bookmarks")
+                    .font(.title3)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 32)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(.ultraThinMaterial)
+            )
+            
+            // Progress indicator
+            HStack(spacing: 16) {
+                VStack(spacing: 4) {
+                    Text("\(readBookmarks)")
+                        .font(.title)
+                        .fontWeight(.bold)
+                    Text("Read")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                
+                VStack(spacing: 4) {
+                    Text("\(unreadBookmarks)")
+                        .font(.title)
+                        .fontWeight(.bold)
+                    Text("To Read")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+            }
+        }
+    }
+    
+    // MARK: - Quick Stats Section
+    
+    private var quickStatsSection: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("Overview")
+                    .font(.headline)
+                Spacer()
+                Text(String(format: "%.0f%% Complete", readPercentage))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            
+            // Slim progress bar
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.thinMaterial)
+                    
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(
+                            LinearGradient(
+                                colors: [themeManager.currentTheme.primaryColor, themeManager.currentTheme.secondaryColor],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: geometry.size.width * (readPercentage / 100))
+                        .animation(.smooth, value: readPercentage)
+                }
+            }
+            .frame(height: 12)
+        }
+        .padding()
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+    }
+    
+    // MARK: - Overview Section (Removed)
     
     private var overviewSection: some View {
         VStack(spacing: 12) {
@@ -107,7 +200,7 @@ struct StatisticsView: View {
         }
     }
     
-    // MARK: - Progress Section
+    // MARK: - Progress Section (Removed)
     
     private var progressSection: some View {
         VStack(spacing: 16) {
@@ -147,39 +240,42 @@ struct StatisticsView: View {
         }
     }
     
+    
     // MARK: - Category Section
     
     private var categorySection: some View {
-        VStack(spacing: 16) {
-            Text("Categories")
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            if categoryStats.isEmpty {
-                Text("No categories yet")
+        VStack(spacing: 12) {
+            HStack {
+                Text("Categories")
+                    .font(.headline)
+                Spacer()
+                Text("\(categoryStats.count) types")
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-            } else {
-                VStack(spacing: 12) {
-                    ForEach(categoryStats) { stat in
-                        CategoryRow(stat: stat, total: totalBookmarks)
-                    }
+            }
+            
+            VStack(spacing: 10) {
+                ForEach(categoryStats.prefix(5)) { stat in
+                    CategoryChip(stat: stat)
                 }
-                .padding()
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
             }
         }
+        .padding()
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
     }
     
     // MARK: - Activity Section
     
     private var activitySection: some View {
-        VStack(spacing: 16) {
-            Text("Last 7 Days Activity")
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 12) {
+            HStack {
+                Text("Activity")
+                    .font(.headline)
+                Spacer()
+                Text("Last 7 days")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
             
             Chart(recentActivity) { item in
                 BarMark(
@@ -188,17 +284,67 @@ struct StatisticsView: View {
                 )
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [themeManager.currentTheme.primaryColor, themeManager.currentTheme.secondaryColor],
+                        colors: [themeManager.currentTheme.primaryColor.opacity(0.8), themeManager.currentTheme.secondaryColor.opacity(0.8)],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
-                .cornerRadius(4)
+                .cornerRadius(6)
             }
-            .frame(height: 200)
-            .padding()
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .day)) { value in
+                    AxisValueLabel(format: .dateTime.weekday(.narrow))
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading)
+            }
+            .frame(height: 180)
         }
+        .padding()
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+    }
+}
+}
+
+
+// MARK: - Category Chip
+
+struct CategoryChip: View {
+    let stat: CategoryStat
+    
+    var body: some View {
+        HStack {
+            if let category = Category.allCases.first(where: { $0.rawValue.lowercased() == stat.name }) {
+                // Icon with category color
+                Circle()
+                    .fill(category.color.gradient)
+                    .frame(width: 36, height: 36)
+                    .overlay {
+                        Image(systemName: category.icon)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.white)
+                    }
+                
+                Text(category.rawValue)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            } else {
+                Text(stat.name.capitalized)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            }
+            
+            Spacer()
+            
+            Text("\(stat.count)")
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundStyle(.primary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 }
 

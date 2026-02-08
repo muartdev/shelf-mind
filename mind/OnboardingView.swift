@@ -65,6 +65,7 @@ struct OnboardingView: View {
                     Image(systemName: pages[currentPage].icon)
                         .font(.system(size: 80))
                         .foregroundStyle(pages[currentPage].color)
+                        .shadow(color: pages[currentPage].color.opacity(0.3), radius: 20, x: 0, y: 10)
                         .transition(.scale.combined(with: .opacity))
                         .id("icon-\(currentPage)")
                     
@@ -83,6 +84,18 @@ struct OnboardingView: View {
                             .transition(.opacity)
                             .id("description-\(currentPage)")
                     }
+                    .padding(32)
+                    .background(
+                        .ultraThinMaterial,
+                        in: RoundedRectangle(cornerRadius: 24)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+                    .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+                    .padding(.horizontal, 24)
                 }
                 
                 Spacer()
@@ -105,8 +118,16 @@ struct OnboardingView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(pages[currentPage].color)
+                        .background(
+                            LinearGradient(
+                                colors: [pages[currentPage].color, pages[currentPage].color.opacity(0.8)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
                         .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: pages[currentPage].color.opacity(0.4), radius: 15, x: 0, y: 8)
+                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                 }
                 .padding(.horizontal, 40)
                 .padding(.bottom, 40)

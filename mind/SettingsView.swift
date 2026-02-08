@@ -23,69 +23,67 @@ struct SettingsView: View {
     
     var body: some View {
         NavigationStack {
-            List {
-                // Profile Section
-                Section {
-                    if let user = authManager.currentUser {
-                        HStack(spacing: 16) {
-                            Circle()
-                                .fill(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .frame(width: 60, height: 60)
-                                .overlay {
-                                    Text(user.name.prefix(1).uppercased())
-                                        .font(.title)
-                                        .foregroundStyle(.white)
-                                }
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(user.name)
-                                    .font(.headline)
-                                Text(user.email)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding(.vertical, 8)
-                    }
-                }
+            ZStack {
+                // Background gradient
+                LinearGradient(
+                    colors: themeManager.currentTheme.gradientColors,
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
-                // Appearance Section
-                Section("Appearance") {
-                    ForEach(AppTheme.allCases) { theme in
-                        Button(action: {
-                            withAnimation(.smooth) {
-                                themeManager.currentTheme = theme
-                            }
-                        }) {
+                // Glass effect list
+                List {
+                    // Profile Section
+                    Section {
+                        if let user = authManager.currentUser {
                             HStack(spacing: 16) {
-                                // Theme preview
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(theme.previewGradient)
-                                    .frame(width: 50, height: 50)
+                                Circle()
+                                    .fill(LinearGradient(colors: [themeManager.currentTheme.primaryColor, themeManager.currentTheme.secondaryColor], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                    .frame(width: 60, height: 60)
                                     .overlay {
-                                        Image(systemName: theme.icon)
-                                            .font(.title3)
+                                        Text(user.name.prefix(1).uppercased())
+                                            .font(.title)
                                             .foregroundStyle(.white)
                                     }
+                                    .shadow(color: themeManager.currentTheme.primaryColor.opacity(0.3), radius: 8, y: 4)
                                 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(theme.displayName)
-                                        .foregroundStyle(.primary)
-                                    Text(theme.isDark ? "Dark Mode" : "Light Mode")
-                                        .font(.caption)
+                                    Text(user.name)
+                                        .font(.headline)
+                                    Text(user.email)
+                                        .font(.subheadline)
                                         .foregroundStyle(.secondary)
                                 }
-                                
-                                Spacer()
-                                
-                                if themeManager.currentTheme == theme {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(.blue)
-                                }
                             }
+                            .padding(.vertical, 8)
                         }
                     }
-                }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    
+                    // Appearance Section
+                    Section("Appearance") {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(AppTheme.allCases) { theme in
+                                    ThemeCard(
+                                        theme: theme,
+                                        isSelected: themeManager.currentTheme == theme,
+                                        action: {
+                                            withAnimation(.smooth) {
+                                                themeManager.currentTheme = theme
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                            .padding(.vertical, 8)
+                        }
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                    }
+                    .listRowSeparator(.hidden)
                 
                 // Notifications
                 Section("Notifications") {
@@ -95,6 +93,11 @@ struct SettingsView: View {
                         DatePicker("Daily Reminder", selection: $reminderTime, displayedComponents: .hourAndMinute)
                     }
                 }
+                .listRowBackground(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.ultraThinMaterial)
+                )
+                .listRowSeparator(.hidden)
                 
                 // Data Management
                 Section("Data") {
@@ -110,6 +113,11 @@ struct SettingsView: View {
                         Label("Delete All Bookmarks", systemImage: "trash")
                     }
                 }
+                .listRowBackground(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.ultraThinMaterial)
+                )
+                .listRowSeparator(.hidden)
                 
                 // Statistics
                 Section("Statistics") {
@@ -127,6 +135,11 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                .listRowBackground(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.ultraThinMaterial)
+                )
+                .listRowSeparator(.hidden)
                 
                 // About
                 Section("About") {
@@ -137,10 +150,15 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                     
-                    Link(destination: URL(string: "https://github.com")!) {
+                    Link(destination: URL(string: "https://github.com/muartdev/shelf-mind")!) {
                         Label("GitHub", systemImage: "link")
                     }
                 }
+                .listRowBackground(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.ultraThinMaterial)
+                )
+                .listRowSeparator(.hidden)
                 
                 // Account
                 Section {
@@ -149,7 +167,16 @@ struct SettingsView: View {
                             .frame(maxWidth: .infinity, alignment: .center)
                     }
                 }
+                .listRowBackground(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.thinMaterial)
+                )
+                .listRowSeparator(.hidden)
             }
+            .scrollContentBackground(.hidden)
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .listStyle(.insetGrouped)
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showingExportSheet) {
@@ -162,6 +189,7 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { }
             } message: {
                 Text("This action cannot be undone. All your bookmarks will be permanently deleted.")
+            }
             }
         }
     }
@@ -294,6 +322,50 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
     
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Theme Card
+
+struct ThemeCard: View {
+    let theme: AppTheme
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                // Theme preview circle
+                Circle()
+                    .fill(theme.previewGradient)
+                    .frame(width: 60, height: 60)
+                    .overlay {
+                        Image(systemName: theme.icon)
+                            .font(.title2)
+                            .foregroundStyle(.white)
+                    }
+                    .overlay {
+                        if isSelected {
+                            Circle()
+                                .strokeBorder(.white, lineWidth: 3)
+                            Circle()
+                                .strokeBorder(theme.primaryColor, lineWidth: 6)
+                                .padding(-3)
+                        }
+                    }
+                
+                VStack(spacing: 2) {
+                    Text(theme.displayName)
+                        .font(.caption)
+                        .fontWeight(isSelected ? .semibold : .regular)
+                    Text(theme.isDark ? "Dark" : "Light")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(width: 80)
+        }
+        .buttonStyle(.plain)
+    }
 }
 
 #Preview {
