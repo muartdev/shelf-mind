@@ -315,7 +315,7 @@ struct CategoryButton: View {
                 action()
             }
         }) {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Circle()
                     .fill(category.color.gradient)
                     .frame(width: 36, height: 36)
@@ -325,13 +325,12 @@ struct CategoryButton: View {
                             .foregroundStyle(.white)
                     }
                 
-                Text(category.rawValue)
+                Text(category.shortName)
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
-                    .lineLimit(1)
                 
-                Spacer(minLength: 0)
+                Spacer()
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
@@ -339,11 +338,11 @@ struct CategoryButton: View {
                         .font(.title3)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 64)
+        .frame(height: 60)
         .categoryButtonStyle(isSelected: isSelected, color: category.color)
     }
 }

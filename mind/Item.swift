@@ -56,6 +56,17 @@ enum Category: String, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
+    var shortName: String {
+        switch self {
+        case .twitter: return "X"
+        case .instagram: return "Instagram"
+        case .youtube: return "YouTube"
+        case .article: return "Article"
+        case .video: return "Video"
+        case .general: return "General"
+        }
+    }
+    
     var icon: String {
         switch self {
         case .twitter: return "xmark.app.fill"  // X logo style
