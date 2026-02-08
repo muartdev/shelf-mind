@@ -58,32 +58,71 @@ struct AddBookmarkView: View {
     // MARK: - Form Section
     
     private var formSection: some View {
-        VStack(spacing: 16) {
-            InputField(
-                title: "Title",
-                icon: "text.quote",
-                text: $title,
-                placeholder: "Enter bookmark title"
-            )
+        VStack(alignment: .leading, spacing: 20) {
+            // Title field
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Image(systemName: "text.quote")
+                        .font(.subheadline)
+                        .foregroundStyle(themeManager.currentTheme.primaryColor)
+                    Text("Title")
+                        .font(.headline)
+                }
+                
+                TextField("Enter bookmark title", text: $title)
+                    .textFieldStyle(.plain)
+                    .padding(16)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                    )
+            }
             
-            InputField(
-                title: "URL",
-                icon: "link",
-                text: $url,
-                placeholder: "https://example.com"
-            )
-            .textInputAutocapitalization(.never)
-            .keyboardType(.URL)
+            // URL field
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Image(systemName: "link")
+                        .font(.subheadline)
+                        .foregroundStyle(themeManager.currentTheme.primaryColor)
+                    Text("URL")
+                        .font(.headline)
+                }
+                
+                TextField("https://example.com", text: $url)
+                    .textFieldStyle(.plain)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
+                    .padding(16)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                    )
+            }
             
-            InputField(
-                title: "Notes",
-                icon: "note.text",
-                text: $notes,
-                placeholder: "Add notes (optional)",
-                axis: .vertical,
-                lineLimit: 4
-            )
+            // Notes field
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Image(systemName: "note.text")
+                        .font(.subheadline)
+                        .foregroundStyle(themeManager.currentTheme.primaryColor)
+                    Text("Notes")
+                        .font(.headline)
+                }
+                
+                TextField("Add notes (optional)", text: $notes, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .lineLimit(4...6)
+                    .padding(16)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                    )
+            }
         }
+        .padding(20)
         .formGlassStyle()
     }
     
@@ -91,22 +130,23 @@ struct AddBookmarkView: View {
     
     private var categorySection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
+            HStack(spacing: 8) {
                 Image(systemName: "folder")
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline)
+                    .foregroundStyle(themeManager.currentTheme.primaryColor)
                 Text("Category")
                     .font(.headline)
             }
             
             categoryGrid
         }
-        .padding()
+        .padding(20)
         .formGlassStyle()
     }
     
     @ViewBuilder
     private var categoryGrid: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 12) {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
             ForEach(Category.allCases) { category in
                 CategoryButton(
                     category: category,
@@ -121,29 +161,33 @@ struct AddBookmarkView: View {
     
     private var tagsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
+            HStack(spacing: 8) {
                 Image(systemName: "tag")
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline)
+                    .foregroundStyle(themeManager.currentTheme.primaryColor)
                 Text("Tags")
                     .font(.headline)
             }
             
             // Tag input
-            HStack {
+            HStack(spacing: 12) {
                 TextField("Add tag", text: $newTag)
+                    .textFieldStyle(.plain)
                     .textInputAutocapitalization(.never)
-                    .onSubmit {
-                        addTag()
-                    }
+                    .onSubmit(addTag)
                 
                 Button(action: addTag) {
                     Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(.blue)
-                        .font(.title3)
+                        .foregroundStyle(themeManager.currentTheme.primaryColor)
+                        .font(.title2)
                 }
             }
-            .padding()
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .padding(16)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+            )
             
             // Tags list
             if !tags.isEmpty {
@@ -156,7 +200,7 @@ struct AddBookmarkView: View {
                 }
             }
         }
-        .padding()
+        .padding(20)
         .formGlassStyle()
     }
     
@@ -176,16 +220,22 @@ struct AddBookmarkView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
+            Button {
                 dismiss()
+            } label: {
+                Text("Cancel")
+                    .foregroundStyle(themeManager.currentTheme.primaryColor)
             }
         }
         
         ToolbarItem(placement: .confirmationAction) {
-            Button("Save") {
+            Button {
                 saveBookmark()
+            } label: {
+                Text("Save")
+                    .fontWeight(.semibold)
+                    .foregroundStyle(themeManager.currentTheme.primaryColor)
             }
-            .bold()
         }
     }
     
@@ -265,18 +315,32 @@ struct CategoryButton: View {
                 action()
             }
         }) {
-            VStack(spacing: 8) {
-                Image(systemName: category.icon)
-                    .font(.title2)
-                    .foregroundStyle(isSelected ? category.color : .secondary)
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(category.color.gradient)
+                    .frame(width: 32, height: 32)
+                    .overlay {
+                        Image(systemName: category.icon)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.white)
+                    }
                 
-                Text(category.rawValue)
-                    .font(.caption)
-                    .bold()
-                    .foregroundStyle(isSelected ? .primary : .secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(category.rawValue)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(category.color)
+                        .font(.title3)
+                }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
+            .padding(12)
         }
         .categoryButtonStyle(isSelected: isSelected, color: category.color)
     }
@@ -303,26 +367,20 @@ extension View {
     
     @ViewBuilder
     func categoryButtonStyle(isSelected: Bool, color: Color) -> some View {
-        if isSelected {
-            self.background(
-                color.opacity(0.2),
-                in: RoundedRectangle(cornerRadius: 12)
+        self
+            .background(
+                isSelected ? color.opacity(0.15) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 14)
+            )
+            .background(
+                .thinMaterial,
+                in: RoundedRectangle(cornerRadius: 14)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(color, lineWidth: 2)
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(isSelected ? color.opacity(0.5) : .white.opacity(0.1), lineWidth: isSelected ? 2 : 1)
             )
-            .shadow(color: color.opacity(0.3), radius: 8, y: 4)
-        } else {
-            self.background(
-                .ultraThinMaterial,
-                in: RoundedRectangle(cornerRadius: 12)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(.white.opacity(0.1), lineWidth: 1)
-            )
-        }
+            .shadow(color: isSelected ? color.opacity(0.2) : .clear, radius: 8, y: 4)
     }
 }
 
