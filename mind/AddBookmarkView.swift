@@ -315,22 +315,20 @@ struct CategoryButton: View {
                 action()
             }
         }) {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 Circle()
                     .fill(category.color.gradient)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 36, height: 36)
                     .overlay {
                         Image(systemName: category.icon)
-                            .font(.system(size: 14))
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(.white)
                     }
                 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(category.rawValue)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                }
+                Text(category.rawValue)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.primary)
                 
                 Spacer()
                 
@@ -340,7 +338,9 @@ struct CategoryButton: View {
                         .font(.title3)
                 }
             }
-            .padding(12)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, minHeight: 64)
         }
         .categoryButtonStyle(isSelected: isSelected, color: category.color)
     }

@@ -82,12 +82,12 @@ struct StatisticsView: View {
             VStack(spacing: 8) {
                 Text("\(totalBookmarks)")
                     .font(.system(size: 72, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                 
                 Text("Total Bookmarks")
                     .font(.title3)
                     .fontWeight(.medium)
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 32)
@@ -95,6 +95,11 @@ struct StatisticsView: View {
                 RoundedRectangle(cornerRadius: 24)
                     .fill(.ultraThinMaterial)
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.1), radius: 15, y: 8)
             
             // Progress indicator
             HStack(spacing: 16) {
@@ -102,6 +107,7 @@ struct StatisticsView: View {
                     Text("\(readBookmarks)")
                         .font(.title)
                         .fontWeight(.bold)
+                        .foregroundStyle(.primary)
                     Text("Read")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -109,11 +115,17 @@ struct StatisticsView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
                 
                 VStack(spacing: 4) {
                     Text("\(unreadBookmarks)")
                         .font(.title)
                         .fontWeight(.bold)
+                        .foregroundStyle(.primary)
                     Text("To Read")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -121,6 +133,11 @@ struct StatisticsView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
             }
         }
     }

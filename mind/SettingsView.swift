@@ -371,23 +371,21 @@ struct ThemeCard: View {
         Button(action: action) {
             VStack(spacing: 8) {
                 // Theme preview circle
-                Circle()
-                    .fill(theme.previewGradient)
-                    .frame(width: 60, height: 60)
-                    .overlay {
-                        Image(systemName: theme.icon)
-                            .font(.title2)
-                            .foregroundStyle(.white)
+                ZStack {
+                    Circle()
+                        .fill(theme.previewGradient)
+                        .frame(width: 60, height: 60)
+                    
+                    Image(systemName: theme.icon)
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                    
+                    if isSelected {
+                        Circle()
+                            .strokeBorder(theme.primaryColor, lineWidth: 3)
+                            .frame(width: 68, height: 68)
                     }
-                    .overlay {
-                        if isSelected {
-                            Circle()
-                                .strokeBorder(.white, lineWidth: 3)
-                            Circle()
-                                .strokeBorder(theme.primaryColor, lineWidth: 6)
-                                .padding(-3)
-                        }
-                    }
+                }
                 
                 VStack(spacing: 2) {
                     Text(theme.displayName)
