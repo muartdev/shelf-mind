@@ -71,19 +71,17 @@ struct SettingsView: View {
                                 .font(.headline)
                                 .foregroundStyle(.secondary)
                             
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(AppTheme.allCases) { theme in
-                                        ThemeCard(
-                                            theme: theme,
-                                            isSelected: themeManager.currentTheme == theme,
-                                            action: {
-                                                withAnimation(.smooth) {
-                                                    themeManager.currentTheme = theme
-                                                }
+                            HStack(spacing: 8) {
+                                ForEach(AppTheme.allCases) { theme in
+                                    ThemeCard(
+                                        theme: theme,
+                                        isSelected: themeManager.currentTheme == theme,
+                                        action: {
+                                            withAnimation(.smooth) {
+                                                themeManager.currentTheme = theme
                                             }
-                                        )
-                                    }
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -369,34 +367,36 @@ struct ThemeCard: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 // Theme preview circle
                 ZStack {
                     Circle()
                         .fill(theme.previewGradient)
-                        .frame(width: 60, height: 60)
+                        .frame(width: 48, height: 48)
                     
                     Image(systemName: theme.icon)
-                        .font(.title2)
+                        .font(.body)
                         .foregroundStyle(.white)
                     
                     if isSelected {
                         Circle()
-                            .strokeBorder(theme.primaryColor, lineWidth: 3)
-                            .frame(width: 68, height: 68)
+                            .strokeBorder(theme.primaryColor, lineWidth: 2.5)
+                            .frame(width: 54, height: 54)
                     }
                 }
                 
-                VStack(spacing: 2) {
+                VStack(spacing: 1) {
                     Text(theme.displayName)
-                        .font(.caption)
-                        .fontWeight(isSelected ? .semibold : .regular)
-                    Text(theme.isDark ? "Dark" : "Light")
                         .font(.caption2)
+                        .fontWeight(isSelected ? .semibold : .regular)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    Text(theme.isDark ? "Dark" : "Light")
+                        .font(.system(size: 9))
                         .foregroundStyle(.secondary)
                 }
             }
-            .frame(width: 80)
+            .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
     }
