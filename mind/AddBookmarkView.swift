@@ -1,0 +1,323 @@
+//
+//  AddBookmarkView.swift
+//  MindShelf
+//
+//  Created by Murat on 8.02.2026.
+//
+
+import SwiftUI
+import SwiftData
+
+struct AddBookmarkView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Environment(ThemeManager.self) private var themeManager
+    
+    @State private var title = ""
+    @State private var url = ""
+    @State private var notes = ""
+    @State private var selectedCategory = Category.general
+    @State private var tags: [String] = []
+    @State private var newTag = ""
+    @State private var showingValidationError = false
+    @State private var validationMessage = ""
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                // Background - themed
+                LinearGradient(
+                    colors: themeManager.currentTheme.gradientColors,
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        formSection
+                        categorySection
+                        tagsSection
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("Add Bookmark")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                toolbarContent
+            }
+            .alert("Validation Error", isPresented: $showingValidationError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(validationMessage)
+            }
+        }
+    }
+    
+    // MARK: - Form Section
+    
+    private var formSection: some View {
+        VStack(spacing: 16) {
+            InputField(
+                title: "Title",
+                icon: "text.quote",
+                text: $title,
+                placeholder: "Enter bookmark title"
+            )
+            
+            InputField(
+                title: "URL",
+                icon: "link",
+                text: $url,
+                placeholder: "https://example.com"
+            )
+            .textInputAutocapitalization(.never)
+            .keyboardType(.URL)
+            
+            InputField(
+                title: "Notes",
+                icon: "note.text",
+                text: $notes,
+                placeholder: "Add notes (optional)",
+                axis: .vertical,
+                lineLimit: 4
+            )
+        }
+        .formGlassStyle()
+    }
+    
+    // MARK: - Category Section
+    
+    private var categorySection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "folder")
+                    .foregroundStyle(.secondary)
+                Text("Category")
+                    .font(.headline)
+            }
+            
+            categoryGrid
+        }
+        .padding()
+        .formGlassStyle()
+    }
+    
+    @ViewBuilder
+    private var categoryGrid: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 12) {
+            ForEach(Category.allCases) { category in
+                CategoryButton(
+                    category: category,
+                    isSelected: selectedCategory == category,
+                    action: { selectedCategory = category }
+                )
+            }
+        }
+    }
+    
+    // MARK: - Tags Section
+    
+    private var tagsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "tag")
+                    .foregroundStyle(.secondary)
+                Text("Tags")
+                    .font(.headline)
+            }
+            
+            // Tag input
+            HStack {
+                TextField("Add tag", text: $newTag)
+                    .textInputAutocapitalization(.never)
+                    .onSubmit {
+                        addTag()
+                    }
+                
+                Button(action: addTag) {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(.blue)
+                        .font(.title3)
+                }
+            }
+            .padding()
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            
+            // Tags list
+            if !tags.isEmpty {
+                FlowLayout(spacing: 8) {
+                    ForEach(tags, id: \.self) { tag in
+                        TagView(tag: tag, onDelete: {
+                            removeTag(tag)
+                        })
+                    }
+                }
+            }
+        }
+        .padding()
+        .formGlassStyle()
+    }
+    
+    private func addTag() {
+        let trimmedTag = newTag.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmedTag.isEmpty, !tags.contains(trimmedTag) else { return }
+        tags.append(trimmedTag)
+        newTag = ""
+    }
+    
+    private func removeTag(_ tag: String) {
+        tags.removeAll { $0 == tag }
+    }
+    
+    // MARK: - Toolbar
+    
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+                dismiss()
+            }
+        }
+        
+        ToolbarItem(placement: .confirmationAction) {
+            Button("Save") {
+                saveBookmark()
+            }
+            .bold()
+        }
+    }
+    
+    // MARK: - Actions
+    
+    private func saveBookmark() {
+        // Validation
+        guard !title.isEmpty else {
+            validationMessage = "Please enter a title"
+            showingValidationError = true
+            return
+        }
+        
+        guard !url.isEmpty else {
+            validationMessage = "Please enter a URL"
+            showingValidationError = true
+            return
+        }
+        
+        guard URL(string: url) != nil else {
+            validationMessage = "Please enter a valid URL"
+            showingValidationError = true
+            return
+        }
+        
+        let bookmark = Bookmark(
+            title: title,
+            url: url,
+            notes: notes,
+            category: selectedCategory.rawValue.lowercased(),
+            tags: tags
+        )
+        
+        modelContext.insert(bookmark)
+        dismiss()
+    }
+}
+
+// MARK: - Input Field Component
+
+struct InputField: View {
+    let title: String
+    let icon: String
+    @Binding var text: String
+    let placeholder: String
+    var axis: Axis = .horizontal
+    var lineLimit: Int = 1
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundStyle(.secondary)
+                Text(title)
+                    .font(.headline)
+            }
+            
+            TextField(placeholder, text: $text, axis: axis)
+                .textFieldStyle(.plain)
+                .padding()
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .lineLimit(lineLimit)
+        }
+    }
+}
+
+// MARK: - Category Button Component
+
+struct CategoryButton: View {
+    let category: Category
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: {
+            withAnimation(.smooth) {
+                action()
+            }
+        }) {
+            VStack(spacing: 8) {
+                Image(systemName: category.icon)
+                    .font(.title2)
+                    .foregroundStyle(isSelected ? category.color : .secondary)
+                
+                Text(category.rawValue)
+                    .font(.caption)
+                    .bold()
+                    .foregroundStyle(isSelected ? .primary : .secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+        }
+        .categoryButtonStyle(isSelected: isSelected, color: category.color)
+    }
+}
+
+// MARK: - Style Extensions
+
+extension View {
+    @ViewBuilder
+    func formGlassStyle() -> some View {
+        self
+            .padding()
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+            .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
+    }
+    
+    @ViewBuilder
+    func categoryButtonStyle(isSelected: Bool, color: Color) -> some View {
+        if isSelected {
+            self.background(
+                color.opacity(0.2),
+                in: RoundedRectangle(cornerRadius: 12)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(color, lineWidth: 2)
+            )
+        } else {
+            self.background(
+                .ultraThinMaterial,
+                in: RoundedRectangle(cornerRadius: 12)
+            )
+        }
+    }
+}
+
+#Preview {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Bookmark.self, configurations: config)
+    
+    return AddBookmarkView()
+        .modelContainer(container)
+        .environment(ThemeManager())
+}

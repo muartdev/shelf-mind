@@ -1,0 +1,144 @@
+//
+//  OnboardingView.swift
+//  MindShelf
+//
+//  Created by Murat on 8.02.2026.
+//
+
+import SwiftUI
+
+struct OnboardingView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(ThemeManager.self) private var themeManager
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @State private var currentPage = 0
+    
+    private let pages: [OnboardingPage] = [
+        OnboardingPage(
+            icon: "bookmark.fill",
+            title: "Save Anything",
+            description: "Bookmark articles, videos, and tweets from X. Never lose track of interesting content again.",
+            color: .blue
+        ),
+        OnboardingPage(
+            icon: "folder.fill",
+            title: "Stay Organized",
+            description: "Simple categories and tags keep everything in its place. Find what you need, when you need it.",
+            color: .purple
+        ),
+        OnboardingPage(
+            icon: "sparkles",
+            title: "Read Later",
+            description: "Mark as read, track your progress. Turn saved content into knowledge.",
+            color: .green
+        )
+    ]
+    
+    var body: some View {
+        ZStack {
+            // Background gradient
+            LinearGradient(
+                colors: [pages[currentPage].color.opacity(0.3), pages[currentPage].color.opacity(0.1)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            .animation(.smooth, value: currentPage)
+            
+            VStack(spacing: 40) {
+                // Skip button
+                HStack {
+                    Spacer()
+                    if currentPage < pages.count - 1 {
+                        Button("Skip") {
+                            completeOnboarding()
+                        }
+                        .foregroundStyle(.secondary)
+                        .padding()
+                    }
+                }
+                
+                Spacer()
+                
+                // Page content
+                VStack(spacing: 30) {
+                    Image(systemName: pages[currentPage].icon)
+                        .font(.system(size: 80))
+                        .foregroundStyle(pages[currentPage].color)
+                        .transition(.scale.combined(with: .opacity))
+                        .id("icon-\(currentPage)")
+                    
+                    VStack(spacing: 16) {
+                        Text(pages[currentPage].title)
+                            .font(.largeTitle)
+                            .bold()
+                            .transition(.opacity)
+                            .id("title-\(currentPage)")
+                        
+                        Text(pages[currentPage].description)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                            .transition(.opacity)
+                            .id("description-\(currentPage)")
+                    }
+                }
+                
+                Spacer()
+                
+                // Page indicator
+                HStack(spacing: 8) {
+                    ForEach(0..<pages.count, id: \.self) { index in
+                        Circle()
+                            .fill(index == currentPage ? pages[currentPage].color : Color.gray.opacity(0.3))
+                            .frame(width: 8, height: 8)
+                            .animation(.smooth, value: currentPage)
+                    }
+                }
+                .padding(.bottom, 20)
+                
+                // Next/Get Started button
+                Button(action: nextPage) {
+                    Text(currentPage == pages.count - 1 ? "Get Started" : "Next")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(pages[currentPage].color)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .padding(.horizontal, 40)
+                .padding(.bottom, 40)
+            }
+        }
+        .interactiveDismissDisabled()
+    }
+    
+    private func nextPage() {
+        if currentPage < pages.count - 1 {
+            withAnimation(.smooth) {
+                currentPage += 1
+            }
+        } else {
+            completeOnboarding()
+        }
+    }
+    
+    private func completeOnboarding() {
+        hasCompletedOnboarding = true
+        dismiss()
+    }
+}
+
+struct OnboardingPage {
+    let icon: String
+    let title: String
+    let description: String
+    let color: Color
+}
+
+#Preview {
+    OnboardingView()
+        .environment(ThemeManager())
+}
