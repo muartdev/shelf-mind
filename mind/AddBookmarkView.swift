@@ -12,6 +12,7 @@ struct AddBookmarkView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(ThemeManager.self) private var themeManager
+    @Environment(AuthManager.self) private var authManager
     
     @State private var title = ""
     @State private var url = ""
@@ -21,6 +22,7 @@ struct AddBookmarkView: View {
     @State private var newTag = ""
     @State private var showingValidationError = false
     @State private var validationMessage = ""
+    @State private var isSaving = false
     
     var body: some View {
         NavigationStack {
@@ -269,7 +271,28 @@ struct AddBookmarkView: View {
             tags: tags
         )
         
+        // Save to local SwiftData
         modelContext.insert(bookmark)
+        
+        // Save to Supabase
+        Task {
+            isSaving = true
+            defer { isSaving = false }
+            
+            guard let userId = authManager.currentUser?.id else {
+                print("❌ No user ID found")
+                return
+            }
+            
+            do {
+                try await SupabaseManager.shared.createBookmark(bookmark, userId: userId)
+                print("✅ Bookmark saved to Supabase")
+            } catch {
+                print("❌ Failed to save bookmark to Supabase: \(error)")
+                // Still saved locally, so we can continue
+            }
+        }
+        
         dismiss()
     }
 }

@@ -17,8 +17,12 @@ final class SupabaseManager {
     
     private init() {
         // Initialize Supabase client with config
+        print("🔍 DEBUG: supabaseURL = \(Config.supabaseURL)")
+        print("🔍 DEBUG: supabaseURL.host = \(Config.supabaseURL.host ?? "nil")")
+        print("🔍 DEBUG: supabaseKey = \(Config.supabaseAnonKey.prefix(20))...")
+        
         self.client = SupabaseClient(
-            supabaseURL: URL(string: Config.supabaseURL)!,
+            supabaseURL: Config.supabaseURL,
             supabaseKey: Config.supabaseAnonKey
         )
     }
