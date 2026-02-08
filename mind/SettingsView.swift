@@ -32,14 +32,17 @@ struct SettingsView: View {
                 )
                 .ignoresSafeArea()
                 
-                // Glass effect list
-                List {
-                    // Profile Section
-                    Section {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Profile Section
                         if let user = authManager.currentUser {
                             HStack(spacing: 16) {
                                 Circle()
-                                    .fill(LinearGradient(colors: [themeManager.currentTheme.primaryColor, themeManager.currentTheme.secondaryColor], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                    .fill(LinearGradient(
+                                        colors: [themeManager.currentTheme.primaryColor, themeManager.currentTheme.secondaryColor],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ))
                                     .frame(width: 60, height: 60)
                                     .overlay {
                                         Text(user.name.prefix(1).uppercased())
@@ -55,128 +58,162 @@ struct SettingsView: View {
                                         .font(.subheadline)
                                         .foregroundStyle(.secondary)
                                 }
+                                
+                                Spacer()
                             }
-                            .padding(.vertical, 8)
+                            .padding()
+                            .settingsCardStyle()
                         }
-                    }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    
-                    // Appearance Section
-                    Section("Appearance") {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                                ForEach(AppTheme.allCases) { theme in
-                                    ThemeCard(
-                                        theme: theme,
-                                        isSelected: themeManager.currentTheme == theme,
-                                        action: {
-                                            withAnimation(.smooth) {
-                                                themeManager.currentTheme = theme
+                        
+                        // Appearance Section
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Appearance")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal)
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(AppTheme.allCases) { theme in
+                                        ThemeCard(
+                                            theme: theme,
+                                            isSelected: themeManager.currentTheme == theme,
+                                            action: {
+                                                withAnimation(.smooth) {
+                                                    themeManager.currentTheme = theme
+                                                }
                                             }
-                                        }
-                                    )
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal)
+                            }
+                        }
+                        
+                        // Notifications
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Notifications")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                            
+                            Toggle("Enable Notifications", isOn: $notificationsEnabled)
+                            
+                            if notificationsEnabled {
+                                DatePicker("Daily Reminder", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                            }
+                        }
+                        .padding()
+                        .settingsCardStyle()
+                        
+                        // Data Management
+                        VStack(spacing: 0) {
+                            Text("Data")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal)
+                                .padding(.bottom, 12)
+                            
+                            VStack(spacing: 0) {
+                                Button(action: { showingExportSheet = true }) {
+                                    HStack {
+                                        Label("Export Bookmarks", systemImage: "square.and.arrow.up")
+                                        Spacer()
+                                    }
+                                    .foregroundStyle(.primary)
+                                    .padding()
+                                }
+                                
+                                Divider()
+                                    .padding(.leading)
+                                
+                                Button(action: { showingImportSheet = true }) {
+                                    HStack {
+                                        Label("Import Bookmarks", systemImage: "square.and.arrow.down")
+                                        Spacer()
+                                    }
+                                    .foregroundStyle(.primary)
+                                    .padding()
+                                }
+                                
+                                Divider()
+                                    .padding(.leading)
+                                
+                                Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
+                                    HStack {
+                                        Label("Delete All Bookmarks", systemImage: "trash")
+                                        Spacer()
+                                    }
+                                    .padding()
                                 }
                             }
-                            .padding(.vertical, 8)
+                            .settingsCardStyle()
                         }
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
+                        
+                        // Statistics
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Statistics")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                            
+                            HStack {
+                                Text("Total Bookmarks")
+                                Spacer()
+                                Text("\(bookmarks.count)")
+                                    .foregroundStyle(.secondary)
+                            }
+                            
+                            Divider()
+                            
+                            HStack {
+                                Text("Unread")
+                                Spacer()
+                                Text("\(bookmarks.filter { !$0.isRead }.count)")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding()
+                        .settingsCardStyle()
+                        
+                        // About
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("About")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                            
+                            HStack {
+                                Text("Version")
+                                Spacer()
+                                Text("1.0.0")
+                                    .foregroundStyle(.secondary)
+                            }
+                            
+                            Divider()
+                            
+                            Link(destination: URL(string: "https://github.com/muartdev/shelf-mind")!) {
+                                HStack {
+                                    Label("GitHub", systemImage: "link")
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.caption)
+                                }
+                            }
+                        }
+                        .padding()
+                        .settingsCardStyle()
+                        
+                        // Sign Out
+                        Button(role: .destructive, action: signOut) {
+                            Text("Sign Out")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        }
+                        .settingsCardStyle()
                     }
-                    .listRowSeparator(.hidden)
-                
-                // Notifications
-                Section("Notifications") {
-                    Toggle("Enable Notifications", isOn: $notificationsEnabled)
-                    
-                    if notificationsEnabled {
-                        DatePicker("Daily Reminder", selection: $reminderTime, displayedComponents: .hourAndMinute)
-                    }
+                    .padding()
                 }
-                .listRowBackground(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.ultraThinMaterial)
-                )
-                .listRowSeparator(.hidden)
-                
-                // Data Management
-                Section("Data") {
-                    Button(action: { showingExportSheet = true }) {
-                        Label("Export Bookmarks", systemImage: "square.and.arrow.up")
-                    }
-                    
-                    Button(action: { showingImportSheet = true }) {
-                        Label("Import Bookmarks", systemImage: "square.and.arrow.down")
-                    }
-                    
-                    Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
-                        Label("Delete All Bookmarks", systemImage: "trash")
-                    }
-                }
-                .listRowBackground(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.ultraThinMaterial)
-                )
-                .listRowSeparator(.hidden)
-                
-                // Statistics
-                Section("Statistics") {
-                    HStack {
-                        Text("Total Bookmarks")
-                        Spacer()
-                        Text("\(bookmarks.count)")
-                            .foregroundStyle(.secondary)
-                    }
-                    
-                    HStack {
-                        Text("Unread")
-                        Spacer()
-                        Text("\(bookmarks.filter { !$0.isRead }.count)")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .listRowBackground(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.ultraThinMaterial)
-                )
-                .listRowSeparator(.hidden)
-                
-                // About
-                Section("About") {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text("1.0.0")
-                            .foregroundStyle(.secondary)
-                    }
-                    
-                    Link(destination: URL(string: "https://github.com/muartdev/shelf-mind")!) {
-                        Label("GitHub", systemImage: "link")
-                    }
-                }
-                .listRowBackground(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.ultraThinMaterial)
-                )
-                .listRowSeparator(.hidden)
-                
-                // Account
-                Section {
-                    Button(role: .destructive, action: signOut) {
-                        Text("Sign Out")
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
-                }
-                .listRowBackground(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.thinMaterial)
-                )
-                .listRowSeparator(.hidden)
             }
-            .scrollContentBackground(.hidden)
-            .listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
-            .listStyle(.insetGrouped)
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showingExportSheet) {
@@ -189,7 +226,6 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { }
             } message: {
                 Text("This action cannot be undone. All your bookmarks will be permanently deleted.")
-            }
             }
         }
     }
@@ -365,6 +401,24 @@ struct ThemeCard: View {
             .frame(width: 80)
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Settings Card Style
+
+extension View {
+    func settingsCardStyle() -> some View {
+        self
+            .background(
+                .ultraThinMaterial,
+                in: RoundedRectangle(cornerRadius: 16)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 8)
+            .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
 }
 
