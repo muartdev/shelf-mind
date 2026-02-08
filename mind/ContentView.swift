@@ -11,6 +11,7 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ThemeManager.self) private var themeManager
+    @Environment(AuthManager.self) private var authManager
     @Query(sort: \Bookmark.dateAdded, order: .reverse) private var bookmarks: [Bookmark]
     
     @State private var showingAddBookmark = false
@@ -18,6 +19,7 @@ struct ContentView: View {
     @State private var searchText = ""
     @State private var selectedCategory: String?
     @State private var showOnlyUnread = false
+    @State private var isLoadingFromSupabase = false
     
     var filteredBookmarks: [Bookmark] {
         var result = bookmarks
@@ -75,6 +77,9 @@ struct ContentView: View {
             }
             .sheet(item: $selectedBookmark) { bookmark in
                 BookmarkDetailView(bookmark: bookmark)
+            }
+            .task {
+                await loadBookmarksFromSupabase()
             }
         }
     }
@@ -203,6 +208,50 @@ struct ContentView: View {
     private func clearFilters() {
         selectedCategory = nil
         showOnlyUnread = false
+    }
+    
+    // MARK: - Supabase Sync
+    
+    private func loadBookmarksFromSupabase() async {
+        guard !isLoadingFromSupabase else { return }
+        guard let userId = authManager.currentUser?.id else {
+            print("⚠️ No user logged in, skipping Supabase fetch")
+            return
+        }
+        
+        isLoadingFromSupabase = true
+        defer { isLoadingFromSupabase = false }
+        
+        do {
+            let supabaseBookmarks = try await SupabaseManager.shared.fetchBookmarks(userId: userId)
+            print("✅ Fetched \(supabaseBookmarks.count) bookmarks from Supabase")
+            
+            // Sync to local SwiftData
+            for dto in supabaseBookmarks {
+                // Check if bookmark already exists locally
+                let existsLocally = bookmarks.contains(where: { $0.id == dto.id })
+                
+                if !existsLocally {
+                    let bookmark = Bookmark(
+                        id: dto.id,
+                        title: dto.title,
+                        url: dto.url,
+                        notes: dto.notes,
+                        category: dto.category,
+                        dateAdded: dto.created_at ?? Date(),
+                        isRead: dto.is_read,
+                        thumbnailURL: dto.thumbnail_url,
+                        tags: dto.tags
+                    )
+                    modelContext.insert(bookmark)
+                }
+            }
+            
+            try modelContext.save()
+            print("✅ Synced bookmarks to local database")
+        } catch {
+            print("❌ Failed to load bookmarks from Supabase: \(error)")
+        }
     }
     
     @ToolbarContentBuilder
