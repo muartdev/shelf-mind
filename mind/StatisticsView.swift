@@ -305,7 +305,6 @@ struct StatisticsView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
     }
 }
-}
 
 
 // MARK: - Category Chip
