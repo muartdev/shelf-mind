@@ -26,6 +26,10 @@ struct AddBookmarkView: View {
     @State private var validationMessage = ""
     @State private var isSaving = false
     @State private var showingPaywall = false
+    @State private var isLoadingPreview = false
+    @State private var previewTitle: String?
+    @State private var previewImage: String?
+    @State private var thumbnailURL: String?
     
     var body: some View {
         NavigationStack {
@@ -66,72 +70,199 @@ struct AddBookmarkView: View {
     // MARK: - Form Section
     
     private var formSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(spacing: 16) {
+            // URL field (first - most important)
+            VStack(alignment: .leading, spacing: 8) {
+                Label("URL", systemImage: "link.circle.fill")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(themeManager.currentTheme.primaryColor)
+                
+                HStack(spacing: 12) {
+                    TextField("https://example.com", text: $url)
+                        .textFieldStyle(.plain)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                        .font(.body)
+                        .onChange(of: url) { oldValue, newValue in
+                            if newValue != oldValue && !newValue.isEmpty {
+                                loadURLPreview(for: newValue)
+                            }
+                        }
+                    
+                    if isLoadingPreview {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    }
+                }
+                .padding(14)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    themeManager.currentTheme.primaryColor.opacity(0.3),
+                                    themeManager.currentTheme.secondaryColor.opacity(0.3)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                )
+            }
+            
+            // Preview Card (if available)
+            if let previewTitle = previewTitle {
+                previewCard
+            }
+            
             // Title field
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    Image(systemName: "text.quote")
-                        .font(.subheadline)
-                        .foregroundStyle(themeManager.currentTheme.primaryColor)
-                    Text("Title")
-                        .font(.headline)
-                }
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Title", systemImage: "text.quote")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
                 
-                TextField("Enter bookmark title", text: $title)
+                TextField("Enter title (auto-filled from URL)", text: $title)
                     .textFieldStyle(.plain)
-                    .padding(16)
-                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    .font(.body)
+                    .padding(14)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(.white.opacity(0.1), lineWidth: 1)
                     )
             }
             
-            // URL field
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    Image(systemName: "link")
-                        .font(.subheadline)
-                        .foregroundStyle(themeManager.currentTheme.primaryColor)
-                    Text("URL")
-                        .font(.headline)
-                }
+            // Notes field (collapsible)
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Notes (Optional)", systemImage: "note.text")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
                 
-                TextField("https://example.com", text: $url)
+                TextField("Add notes...", text: $notes, axis: .vertical)
                     .textFieldStyle(.plain)
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.URL)
-                    .padding(16)
-                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    .font(.body)
+                    .lineLimit(3...5)
+                    .padding(14)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .strokeBorder(.white.opacity(0.15), lineWidth: 1)
-                    )
-            }
-            
-            // Notes field
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    Image(systemName: "note.text")
-                        .font(.subheadline)
-                        .foregroundStyle(themeManager.currentTheme.primaryColor)
-                    Text("Notes")
-                        .font(.headline)
-                }
-                
-                TextField("Add notes (optional)", text: $notes, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .lineLimit(4...6)
-                    .padding(16)
-                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(.white.opacity(0.1), lineWidth: 1)
                     )
             }
         }
         .padding(20)
-        .formGlassStyle()
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.1), radius: 20, y: 10)
+    }
+    
+    // MARK: - Preview Card
+    
+    private var previewCard: some View {
+        Button(action: {
+            if let previewTitle = previewTitle {
+                title = previewTitle
+                thumbnailURL = previewImage
+            }
+        }) {
+            HStack(spacing: 12) {
+                if let previewImage = previewImage {
+                    AsyncImage(url: URL(string: previewImage)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 50, height: 50)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    } placeholder: {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        themeManager.currentTheme.primaryColor.opacity(0.3),
+                                        themeManager.currentTheme.secondaryColor.opacity(0.3)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 50, height: 50)
+                            .overlay {
+                                ProgressView()
+                                    .tint(.white)
+                            }
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    if let previewTitle = previewTitle {
+                        Text(previewTitle)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .lineLimit(2)
+                            .foregroundStyle(.primary)
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles")
+                            .font(.caption2)
+                        Text("Tap to use preview")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                themeManager.currentTheme.primaryColor,
+                                themeManager.currentTheme.secondaryColor
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
+            .padding(12)
+            .background(
+                LinearGradient(
+                    colors: [
+                        themeManager.currentTheme.primaryColor.opacity(0.1),
+                        themeManager.currentTheme.secondaryColor.opacity(0.1)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: RoundedRectangle(cornerRadius: 14)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                themeManager.currentTheme.primaryColor.opacity(0.5),
+                                themeManager.currentTheme.secondaryColor.opacity(0.5)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        lineWidth: 2
+                    )
+            )
+            .shadow(color: themeManager.currentTheme.primaryColor.opacity(0.2), radius: 10, y: 5)
+        }
+        .buttonStyle(.plain)
     }
     
     // MARK: - Category Section
@@ -280,6 +411,9 @@ struct AddBookmarkView: View {
             url: url,
             notes: notes,
             category: selectedCategory.rawValue.lowercased(),
+            dateAdded: Date(),
+            isRead: false,
+            thumbnailURL: thumbnailURL,
             tags: tags
         )
         
@@ -306,6 +440,41 @@ struct AddBookmarkView: View {
         }
         
         dismiss()
+    }
+    
+    // MARK: - URL Preview
+    
+    private func loadURLPreview(for urlString: String) {
+        // Only load for premium users
+        guard PaywallManager.shared.isPremium else {
+            return
+        }
+        
+        // Debounce - wait a bit for user to finish typing
+        Task {
+            try? await Task.sleep(for: .seconds(0.5))
+            
+            guard self.url == urlString else { return } // User changed URL
+            
+            isLoadingPreview = true
+            defer { isLoadingPreview = false }
+            
+            do {
+                let preview = try await URLPreviewManager.shared.fetchPreview(for: urlString)
+                
+                await MainActor.run {
+                    self.previewTitle = preview.title
+                    self.previewImage = preview.imageURL
+                    
+                    // Auto-fill title if empty
+                    if self.title.isEmpty, let title = preview.title {
+                        self.title = title
+                    }
+                }
+            } catch {
+                print("❌ Failed to load preview: \(error.localizedDescription)")
+            }
+        }
     }
 }
 
