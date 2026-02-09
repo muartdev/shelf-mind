@@ -14,6 +14,8 @@ struct AddBookmarkView: View {
     @Environment(ThemeManager.self) private var themeManager
     @Environment(AuthManager.self) private var authManager
     
+    @Query private var bookmarks: [Bookmark]
+    
     @State private var title = ""
     @State private var url = ""
     @State private var notes = ""
@@ -23,6 +25,7 @@ struct AddBookmarkView: View {
     @State private var showingValidationError = false
     @State private var validationMessage = ""
     @State private var isSaving = false
+    @State private var showingPaywall = false
     
     var body: some View {
         NavigationStack {
@@ -53,6 +56,9 @@ struct AddBookmarkView: View {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text(validationMessage)
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
             }
         }
     }
@@ -244,6 +250,12 @@ struct AddBookmarkView: View {
     // MARK: - Actions
     
     private func saveBookmark() {
+        // Check premium limit
+        if !PaywallManager.shared.canAddBookmark(currentCount: bookmarks.count) {
+            showingPaywall = true
+            return
+        }
+        
         // Validation
         guard !title.isEmpty else {
             validationMessage = "Please enter a title"

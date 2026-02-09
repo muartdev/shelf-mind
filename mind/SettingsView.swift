@@ -20,6 +20,7 @@ struct SettingsView: View {
     @State private var showingImportSheet = false
     @State private var showingDeleteConfirmation = false
     @State private var exportedData: Data?
+    @State private var showingPaywall = false
     
     var body: some View {
         NavigationStack {
@@ -34,6 +35,9 @@ struct SettingsView: View {
                 
                 ScrollView {
                     VStack(spacing: 20) {
+                        // Premium Section
+                        premiumSection
+                        
                         // Profile Section
                         if let user = authManager.currentUser {
                             HStack(spacing: 16) {
@@ -225,6 +229,71 @@ struct SettingsView: View {
             } message: {
                 Text("This action cannot be undone. All your bookmarks will be permanently deleted.")
             }
+        }
+    }
+    
+    // MARK: - Premium Section
+    
+    private var premiumSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if PaywallManager.shared.isPremium {
+                // Premium Badge
+                HStack {
+                    Image(systemName: "crown.fill")
+                        .foregroundStyle(.yellow)
+                    Text("Premium Active")
+                        .font(.headline)
+                    Spacer()
+                    Text("✓")
+                        .font(.title3)
+                        .foregroundStyle(.green)
+                }
+                .padding()
+                .background(
+                    LinearGradient(
+                        colors: [.yellow.opacity(0.2), .orange.opacity(0.2)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    in: RoundedRectangle(cornerRadius: 16)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(.yellow.opacity(0.3), lineWidth: 1)
+                )
+            } else {
+                // Upgrade CTA
+                Button(action: { showingPaywall = true }) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "sparkles")
+                                    .foregroundStyle(.yellow)
+                                Text("Upgrade to Premium")
+                                    .font(.headline)
+                            }
+                            
+                            Text("Unlimited bookmarks, URL preview & more")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            Text("From $2.99/month")
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
+                }
+                .settingsCardStyle()
+            }
+        }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView()
         }
     }
     
