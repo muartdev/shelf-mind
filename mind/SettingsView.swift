@@ -17,11 +17,9 @@ struct SettingsView: View {
     
     @State private var notificationsEnabled = true
     @State private var reminderTime = Date()
-    @State private var showingExportSheet = false
-    @State private var showingImportSheet = false
     @State private var showingDeleteConfirmation = false
-    @State private var exportedData: Data?
     @State private var showingPaywall = false
+    @State private var showingPaywallForTheme = false
     
     var body: some View {
         NavigationStack {
@@ -70,9 +68,6 @@ struct SettingsView: View {
                             .settingsCardStyle()
                         }
                         
-                        // Language Section
-                        languageSection
-                        
                         // Appearance Section
                         VStack(alignment: .leading, spacing: 12) {
                             Text(localization.localizedString("settings.appearance"))
@@ -85,8 +80,13 @@ struct SettingsView: View {
                                         theme: theme,
                                         isSelected: themeManager.currentTheme == theme,
                                         action: {
-                                            withAnimation(.smooth) {
-                                                themeManager.currentTheme = theme
+                                            // All theme changes require premium
+                                            if !PaywallManager.shared.isPremium {
+                                                showingPaywallForTheme = true
+                                            } else {
+                                                withAnimation(.smooth) {
+                                                    themeManager.currentTheme = theme
+                                                }
                                             }
                                         }
                                     )
@@ -111,6 +111,9 @@ struct SettingsView: View {
                         .padding()
                         .settingsCardStyle()
                         
+                        // Language Section (moved here)
+                        languageSection
+                        
                         // Data Management
                         VStack(spacing: 0) {
                             Text(localization.localizedString("settings.data"))
@@ -121,30 +124,6 @@ struct SettingsView: View {
                                 .padding(.bottom, 12)
                             
                             VStack(spacing: 0) {
-                                Button(action: { showingExportSheet = true }) {
-                                    HStack {
-                                        Label(localization.localizedString("settings.export"), systemImage: "square.and.arrow.up")
-                                        Spacer()
-                                    }
-                                    .foregroundStyle(.primary)
-                                    .padding()
-                                }
-                                
-                                Divider()
-                                    .padding(.leading)
-                                
-                                Button(action: { showingImportSheet = true }) {
-                                    HStack {
-                                        Label(localization.localizedString("settings.import"), systemImage: "square.and.arrow.down")
-                                        Spacer()
-                                    }
-                                    .foregroundStyle(.primary)
-                                    .padding()
-                                }
-                                
-                                Divider()
-                                    .padding(.leading)
-                                
                                 Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
                                     HStack {
                                         Label(localization.localizedString("settings.delete.all"), systemImage: "trash")
@@ -155,31 +134,6 @@ struct SettingsView: View {
                             }
                             .settingsCardStyle()
                         }
-                        
-                        // Statistics
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text(localization.localizedString("settings.statistics"))
-                                .font(.headline)
-                                .foregroundStyle(.secondary)
-                            
-                            HStack {
-                                Text(localization.localizedString("settings.total.bookmarks"))
-                                Spacer()
-                                Text("\(bookmarks.count)")
-                                    .foregroundStyle(.secondary)
-                            }
-                            
-                            Divider()
-                            
-                            HStack {
-                                Text(localization.localizedString("settings.unread"))
-                                Spacer()
-                                Text("\(bookmarks.filter { !$0.isRead }.count)")
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding()
-                        .settingsCardStyle()
                         
                         // About
                         VStack(alignment: .leading, spacing: 16) {
@@ -192,17 +146,6 @@ struct SettingsView: View {
                                 Spacer()
                                 Text("1.0.0")
                                     .foregroundStyle(.secondary)
-                            }
-                            
-                            Divider()
-                            
-                            Link(destination: URL(string: "https://github.com/muartdev/shelf-mind")!) {
-                                HStack {
-                                    Label(localization.localizedString("settings.github"), systemImage: "link")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.caption)
-                                }
                             }
                         }
                         .padding()
@@ -222,8 +165,8 @@ struct SettingsView: View {
             }
             .navigationTitle(localization.localizedString("settings.title"))
             .navigationBarTitleDisplayMode(.large)
-            .sheet(isPresented: $showingExportSheet) {
-                ExportView(bookmarks: bookmarks)
+            .sheet(isPresented: $showingPaywallForTheme) {
+                PaywallView()
             }
             .confirmationDialog("Delete All Bookmarks", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
                 Button("Delete All", role: .destructive) {
@@ -287,16 +230,46 @@ struct SettingsView: View {
     private var premiumSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             if PaywallManager.shared.isPremium {
-                // Premium Badge
-                HStack {
-                    Image(systemName: "crown.fill")
-                        .foregroundStyle(.yellow)
-                    Text(localization.localizedString("settings.premium.active"))
-                        .font(.headline)
-                    Spacer()
-                    Text("✓")
-                        .font(.title3)
-                        .foregroundStyle(.green)
+                // Premium Badge & Info
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        Image(systemName: "crown.fill")
+                            .foregroundStyle(.yellow)
+                        Text(localization.localizedString("settings.premium.active"))
+                            .font(.headline)
+                        Spacer()
+                        Text("✓")
+                            .font(.title3)
+                            .foregroundStyle(.green)
+                    }
+                    
+                    if PaywallManager.shared.premiumPurchaseDate != nil || PaywallManager.shared.premiumExpirationDate != nil {
+                        Divider()
+                            .background(.white.opacity(0.2))
+                        
+                        VStack(spacing: 8) {
+                            if let purchaseDate = PaywallManager.shared.premiumPurchaseDate {
+                                HStack {
+                                    Text("Member Since")
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text(purchaseDate.formatted(date: .abbreviated, time: .omitted))
+                                        .fontWeight(.medium)
+                                }
+                            }
+                            
+                            if let expirationDate = PaywallManager.shared.premiumExpirationDate {
+                                HStack {
+                                    Text("Renews/Expires")
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text(expirationDate.formatted(date: .abbreviated, time: .omitted))
+                                        .fontWeight(.medium)
+                                }
+                            }
+                        }
+                        .font(.caption)
+                    }
                 }
                 .padding()
                 .background(
@@ -356,125 +329,6 @@ struct SettingsView: View {
             modelContext.delete(bookmark)
         }
     }
-}
-
-// MARK: - Export View
-
-struct ExportView: View {
-    @Environment(\.dismiss) private var dismiss
-    @Environment(ThemeManager.self) private var themeManager
-    let bookmarks: [Bookmark]
-    @State private var exportedData: Data?
-    @State private var showingShareSheet = false
-    
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                Image(systemName: "square.and.arrow.up.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundStyle(.blue)
-                
-                Text("Export Bookmarks")
-                    .font(.title2)
-                    .bold()
-                
-                Text("Export all your bookmarks as JSON file")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                
-                VStack(spacing: 12) {
-                    InfoRow(label: "Total Bookmarks", value: "\(bookmarks.count)")
-                    InfoRow(label: "Unread", value: "\(bookmarks.filter { !$0.isRead }.count)")
-                    InfoRow(label: "Categories", value: "\(Set(bookmarks.map { $0.category }).count)")
-                }
-                .padding()
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                
-                Button(action: exportBookmarks) {
-                    Label("Export Now", systemImage: "square.and.arrow.up")
-                        .font(.headline)
-                }
-                .buttonStyle(PrimaryButtonStyle(theme: themeManager.currentTheme))
-                .padding(.horizontal)
-                
-                Spacer()
-            }
-            .padding()
-            .background(
-                LinearGradient(
-                    colors: themeManager.currentTheme.gradientColors,
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
-            .sheet(isPresented: $showingShareSheet) {
-                if let data = exportedData {
-                    ShareSheet(items: [data])
-                }
-            }
-        }
-    }
-    
-    private func exportBookmarks() {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
-        encoder.dateEncodingStrategy = .iso8601
-        
-        let exportData = bookmarks.map { bookmark in
-            [
-                "id": bookmark.id.uuidString,
-                "title": bookmark.title,
-                "url": bookmark.url,
-                "notes": bookmark.notes,
-                "category": bookmark.category,
-                "dateAdded": ISO8601DateFormatter().string(from: bookmark.dateAdded),
-                "isRead": bookmark.isRead ? "true" : "false",
-                "tags": bookmark.tags.joined(separator: ",")
-            ]
-        }
-        
-        if let data = try? JSONSerialization.data(withJSONObject: exportData, options: .prettyPrinted) {
-            exportedData = data
-            showingShareSheet = true
-        }
-    }
-}
-
-struct InfoRow: View {
-    let label: String
-    let value: String
-    
-    var body: some View {
-        HStack {
-            Text(label)
-            Spacer()
-            Text(value)
-                .foregroundStyle(.secondary)
-                .bold()
-        }
-    }
-}
-
-// MARK: - Share Sheet
-
-struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-    
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
-        return controller
-    }
-    
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Theme Card

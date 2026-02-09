@@ -446,11 +446,6 @@ struct AddBookmarkView: View {
     // MARK: - URL Preview
     
     private func loadURLPreview(for urlString: String) {
-        // Only load for premium users
-        guard PaywallManager.shared.isPremium else {
-            return
-        }
-        
         // Debounce - wait a bit for user to finish typing
         Task {
             try? await Task.sleep(for: .seconds(0.5))
@@ -471,6 +466,14 @@ struct AddBookmarkView: View {
                     if self.title.isEmpty, let title = preview.title {
                         self.title = title
                     }
+                    
+                    // Auto-select category
+                    if let category = URLPreviewManager.shared.suggestCategory(for: urlString) {
+                        self.selectedCategory = category
+                    }
+                    
+                    // Auto-save thumbnail
+                    self.thumbnailURL = preview.imageURL
                 }
             } catch {
                 print("❌ Failed to load preview: \(error.localizedDescription)")

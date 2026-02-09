@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 struct BookmarkDetailView: View {
     @Environment(\.modelContext) private var modelContext
@@ -21,6 +22,9 @@ struct BookmarkDetailView: View {
     @State private var editedNotes: String
     @State private var editedCategory: Category
     @State private var showingDeleteConfirmation = false
+    @State private var showingReminderSheet = false
+    @State private var reminderDate = Date()
+    @State private var showingShareSheet = false
     
     init(bookmark: Bookmark) {
         self.bookmark = bookmark
@@ -58,6 +62,38 @@ struct BookmarkDetailView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 toolbarContent
+            }
+            .sheet(isPresented: $showingReminderSheet) {
+                NavigationStack {
+                    VStack(spacing: 20) {
+                        DatePicker("Select Time", selection: $reminderDate, displayedComponents: [.date, .hourAndMinute])
+                            .datePickerStyle(.graphical)
+                            .padding()
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                        
+                        Button("Set Reminder") {
+                            scheduleNotification()
+                        }
+                        .buttonStyle(PrimaryButtonStyle(theme: themeManager.currentTheme))
+                        .padding()
+                        
+                        Spacer()
+                    }
+                    .padding()
+                    .navigationTitle("Set Reminder")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { showingReminderSheet = false }
+                        }
+                    }
+                }
+                .presentationDetents([.medium])
+            }
+            .sheet(isPresented: $showingShareSheet) {
+                if let url = URL(string: bookmark.url) {
+                    ShareSheet(items: [bookmark.title, url])
+                }
             }
             .confirmationDialog(
                 "Delete Bookmark",
@@ -237,6 +273,13 @@ struct BookmarkDetailView: View {
                 color: .orange,
                 action: shareBookmark
             )
+            
+            actionButton(
+                title: "Set Reminder",
+                icon: "bell",
+                color: .purple,
+                action: { showingReminderSheet = true }
+            )
         }
     }
     
@@ -339,20 +382,31 @@ struct BookmarkDetailView: View {
     }
     
     private func shareBookmark() {
-        guard let url = URL(string: bookmark.url) else { return }
-        
-        #if os(iOS)
-        let activityVC = UIActivityViewController(
-            activityItems: [bookmark.title, url],
-            applicationActivities: nil
-        )
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first,
-           let rootVC = window.rootViewController {
-            rootVC.present(activityVC, animated: true)
+        showingShareSheet = true
+    }
+    
+    private func scheduleNotification() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { success, error in
+            if success {
+                let content = UNMutableNotificationContent()
+                content.title = "Read: \(bookmark.title)"
+                content.body = bookmark.notes.isEmpty ? "Time to read your saved bookmark!" : bookmark.notes
+                content.sound = .default
+                
+                let dateComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: reminderDate)
+                let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+                
+                let request = UNNotificationRequest(identifier: bookmark.id.uuidString, content: content, trigger: trigger)
+                
+                UNUserNotificationCenter.current().add(request)
+                
+                DispatchQueue.main.async {
+                    showingReminderSheet = false
+                }
+            } else if let error = error {
+                print("Notification permission error: \(error.localizedDescription)")
+            }
         }
-        #endif
     }
     
     private func saveChanges() {
@@ -414,6 +468,19 @@ extension View {
             )
             .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
     }
+}
+
+// MARK: - Share Sheet
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {

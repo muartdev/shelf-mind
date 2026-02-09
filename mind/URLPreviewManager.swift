@@ -149,4 +149,27 @@ final class URLPreviewManager {
             return "\(baseURL.scheme ?? "https")://\(baseURL.host ?? "")/\(iconPath)"
         }
     }
+    
+    // MARK: - Category Suggestion
+    
+    func suggestCategory(for urlString: String) -> Category? {
+        guard let url = URL(string: urlString),
+              let host = url.host?.lowercased() else {
+            return nil
+        }
+        
+        if host.contains("twitter.com") || host.contains("x.com") {
+            return .twitter
+        } else if host.contains("instagram.com") {
+            return .instagram
+        } else if host.contains("youtube.com") || host.contains("youtu.be") {
+            return .youtube
+        } else if host.contains("medium.com") || host.contains("dev.to") || host.contains("substack.com") {
+            return .article
+        } else if host.contains("vimeo.com") || host.contains("dailymotion.com") || host.contains("tiktok.com") {
+            return .video
+        }
+        
+        return nil
+    }
 }

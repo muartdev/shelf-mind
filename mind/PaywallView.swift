@@ -14,6 +14,7 @@ struct PaywallView: View {
     @State private var selectedProductID: PaywallManager.ProductID = .yearly
     @State private var isPurchasing = false
     @State private var errorMessage: String?
+    @State private var isAnimating = false
     
     private var paywall = PaywallManager.shared
     
@@ -131,8 +132,24 @@ struct PaywallView: View {
             
             VStack(spacing: 12) {
                 if paywall.products.isEmpty {
-                    ProgressView("Loading...")
+                    if paywall.isLoading {
+                        ProgressView("Loading plans...")
+                            .padding()
+                    } else {
+                        VStack(spacing: 12) {
+                            Text("Unable to load plans")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            Button("Retry") {
+                                Task {
+                                    await paywall.loadProducts()
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                        }
                         .padding()
+                    }
                 } else {
                     ForEach(paywall.products, id: \.id) { product in
                         if let productID = PaywallManager.ProductID(rawValue: product.id) {
@@ -158,21 +175,41 @@ struct PaywallView: View {
                 } else {
                     Text("Start Premium")
                         .font(.headline)
+                        .fontWeight(.bold)
+                        .scaleEffect(isAnimating ? 1.05 : 1.0)
                 }
             }
             .frame(maxWidth: .infinity)
             .padding()
             .background(
                 LinearGradient(
-                    colors: themeManager.currentTheme.gradientColors,
+                    colors: [
+                        themeManager.currentTheme.primaryColor,
+                        themeManager.currentTheme.secondaryColor
+                    ],
                     startPoint: .leading,
                     endPoint: .trailing
                 )
             )
             .foregroundStyle(.white)
             .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(.white.opacity(0.3), lineWidth: 1)
+            )
         }
-        .disabled(isPurchasing)
+        .disabled(isPurchasing || selectedProduct == nil)
+        .shadow(
+            color: themeManager.currentTheme.primaryColor.opacity(isAnimating ? 0.6 : 0.3),
+            radius: isAnimating ? 15 : 10,
+            y: 5
+        )
+        .opacity(isPurchasing || selectedProduct == nil ? 0.6 : 1.0)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                isAnimating = true
+            }
+        }
     }
     
     private var footerSection: some View {

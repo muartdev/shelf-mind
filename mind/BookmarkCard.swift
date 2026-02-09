@@ -46,11 +46,7 @@ struct BookmarkCard: View {
                 
                 Spacer()
                 
-                if !bookmark.isRead {
-                    Image(systemName: "circle.fill")
-                        .font(.caption2)
-                        .foregroundStyle(.blue)
-                }
+
                 
                 Button(action: toggleRead) {
                     Image(systemName: bookmark.isRead ? "checkmark.circle.fill" : "circle")
@@ -124,37 +120,101 @@ struct BookmarkCard: View {
     // MARK: - Compact Layout (Grid View)
     
     private var compactLayout: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Thumbnail centered
-            thumbnailView(size: 80)
-                .frame(maxWidth: .infinity, alignment: .center)
-            
-            // Title
-            Text(bookmark.title)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-            
-            // Category badge
-            HStack {
-                Spacer()
-                categoryBadge
-                Spacer()
-            }
-            
-            // Read status
-            HStack {
-                Spacer()
-                Button(action: toggleRead) {
-                    Image(systemName: bookmark.isRead ? "checkmark.circle.fill" : "circle")
-                        .font(.title3)
-                        .foregroundStyle(bookmark.isRead ? .green : .secondary)
+        VStack(alignment: .leading, spacing: 0) {
+            if let thumbnailURL = bookmark.thumbnailURL, !thumbnailURL.isEmpty {
+                // Full width image layout
+                AsyncImage(url: URL(string: thumbnailURL)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 120)
+                            .frame(maxWidth: .infinity)
+                            .clipped()
+                    case .failure(_), .empty:
+                        // Show placeholder ONLY, not full fallback content
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(height: 120)
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .font(.largeTitle)
+                                    .foregroundStyle(.secondary)
+                            )
+                    @unknown default:
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(height: 120)
+                    }
                 }
-                Spacer()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(bookmark.title)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(height: 40, alignment: .topLeading) // Fixed text height
+                    
+                    HStack {
+                        categoryBadge
+                        Spacer()
+                        readStatusButton
+                    }
+                }
+                .padding(12)
+            } else {
+                // Original layout for no image
+                fallbackCompactContent
+                    .padding(10)
             }
         }
+        .frame(height: 220) // Fixed total height
+    }
+    
+    private var fallbackCompactContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Icon Area (Matches Image Height)
+            ZStack {
+                Color.clear
+                thumbnailView(size: 70)
+            }
+            .frame(height: 120)
+            .frame(maxWidth: .infinity)
+            .background(Color.gray.opacity(0.05))
+            
+            // Content Area
+            VStack(alignment: .leading, spacing: 8) {
+                Text(bookmark.title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .minimumScaleFactor(0.9)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 40, alignment: .topLeading)
+                
+                HStack {
+                    categoryBadge
+                    Spacer()
+                    readStatusButton
+                }
+            }
+            .padding(12)
+        }
+    }
+    
+    private var readStatusButton: some View {
+        Button(action: toggleRead) {
+            Image(systemName: bookmark.isRead ? "checkmark.circle.fill" : "circle")
+                .font(.title3)
+                .foregroundStyle(bookmark.isRead ? .green : .secondary)
+                .frame(width: 44, height: 44) // Larger touch target
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
     
     // MARK: - Thumbnail View

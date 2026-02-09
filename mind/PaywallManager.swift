@@ -154,24 +154,48 @@ final class PaywallManager {
     
     // MARK: - Check Premium Status
     
+    // Premium details
+    private(set) var premiumExpirationDate: Date?
+    private(set) var premiumPurchaseDate: Date?
+    
+    // MARK: - Check Premium Status
+    
     func updatePremiumStatus() async {
         var hasPremium = false
+        var latestTransaction: StoreKit.Transaction?
         
         // Check all transactions
-        for await result in Transaction.currentEntitlements {
-            let transaction = try? checkVerified(result)
-            
-            if let transaction = transaction {
+        for await result in StoreKit.Transaction.currentEntitlements {
+            if let transaction = try? checkVerified(result) {
                 // Check if it's a premium product
                 if ProductID(rawValue: transaction.productID) != nil {
                     hasPremium = true
-                    break
+                    latestTransaction = transaction
+                    
+                    // If it's a subscription, we might want the one with the latest expiration
+                    if let expiration = transaction.expirationDate {
+                        if latestTransaction?.expirationDate == nil || expiration > latestTransaction!.expirationDate! {
+                            latestTransaction = transaction
+                        }
+                    }
                 }
             }
         }
         
         isPremium = hasPremium
+        
+        if let transaction = latestTransaction {
+            premiumExpirationDate = transaction.expirationDate
+            premiumPurchaseDate = transaction.purchaseDate
+        } else {
+            premiumExpirationDate = nil
+            premiumPurchaseDate = nil
+        }
+        
         print(isPremium ? "✅ User is Premium" : "⚠️ User is Free")
+        if let expiration = premiumExpirationDate {
+            print("📅 Expires: \(expiration)")
+        }
     }
     
     // MARK: - Transaction Listener
@@ -179,7 +203,7 @@ final class PaywallManager {
     private func listenForTransactions() -> Task<Void, Error> {
         return Task.detached { @MainActor in
             // Listen for transaction updates
-            for await result in Transaction.updates {
+            for await result in StoreKit.Transaction.updates {
                 do {
                     let transaction = try self.checkVerified(result)
                     

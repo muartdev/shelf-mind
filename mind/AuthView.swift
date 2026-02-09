@@ -101,18 +101,6 @@ struct AuthView: View {
                             }
                         }
                         .buttonStyle(PrimaryButtonStyle(theme: themeManager.currentTheme))
-                        .disabled(authManager.isLoading)
-                        
-                        // Quick demo button
-                        Button(action: quickDemo) {
-                            HStack {
-                                Image(systemName: "bolt.fill")
-                                Text("Quick Demo")
-                            }
-                            .font(.subheadline)
-                        }
-                        .foregroundStyle(themeManager.currentTheme.primaryColor)
-                        
                         Button(action: { withAnimation { isSignUp.toggle() } }) {
                             Text(isSignUp ? localization.localizedString("auth.alreadyhave") : localization.localizedString("auth.donthave"))
                                 .font(.subheadline)
@@ -138,13 +126,7 @@ struct AuthView: View {
         }
     }
     
-    private func quickDemo() {
-        email = "demo@mindshelf.app"
-        password = "demo123"
-        Task {
-            await authManager.signIn(email: email, password: password)
-        }
-    }
+
     
     private func authenticate() {
         Task {

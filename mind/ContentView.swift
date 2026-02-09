@@ -98,22 +98,30 @@ struct ContentView: View {
     // MARK: - Subviews
     
     private var bookmarkListView: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                filterChipsView
-                
-                if viewMode == .list {
-                    listLayout
-                } else {
-                    gridLayout
+        VStack(spacing: 0) {
+            // Sticky Filter Header
+            filterChipsView
+                .padding(.vertical, 12)
+                .background(.ultraThinMaterial)
+                .zIndex(1) // Ensure it sits on top of scrolling content
+            
+            // Scrollable Content
+            ScrollView {
+                VStack(spacing: 16) {
+                    if viewMode == .list {
+                        listLayout
+                    } else {
+                        gridLayout
+                    }
                 }
+                .padding()
+                .padding(.top, 4) // Add a little spacing from the sticky header
             }
-            .padding()
-        }
-        .scrollIndicators(.hidden)
-        .refreshable {
-            // Pull to refresh - reload data
-            await refreshBookmarks()
+            .scrollIndicators(.hidden)
+            .refreshable {
+                // Pull to refresh - reload data
+                await refreshBookmarks()
+            }
         }
     }
     
