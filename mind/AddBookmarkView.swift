@@ -13,6 +13,7 @@ struct AddBookmarkView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(ThemeManager.self) private var themeManager
     @Environment(AuthManager.self) private var authManager
+    @Environment(LocalizationManager.self) private var localization
     
     @Query private var bookmarks: [Bookmark]
     
@@ -51,7 +52,7 @@ struct AddBookmarkView: View {
                     .padding()
                 }
             }
-            .navigationTitle("Add Bookmark")
+            .navigationTitle(localization.localizedString("add.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 toolbarContent
@@ -73,13 +74,13 @@ struct AddBookmarkView: View {
         VStack(spacing: 16) {
             // URL field (first - most important)
             VStack(alignment: .leading, spacing: 8) {
-                Label("URL", systemImage: "link.circle.fill")
+                Label(localization.localizedString("add.url"), systemImage: "link.circle.fill")
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(themeManager.currentTheme.primaryColor)
                 
                 HStack(spacing: 12) {
-                    TextField("https://example.com", text: $url)
+                    TextField(localization.localizedString("add.url.placeholder"), text: $url)
                         .textFieldStyle(.plain)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.URL)
@@ -114,18 +115,18 @@ struct AddBookmarkView: View {
             }
             
             // Preview Card (if available)
-            if let previewTitle = previewTitle {
+            if previewTitle != nil {
                 previewCard
             }
             
             // Title field
             VStack(alignment: .leading, spacing: 8) {
-                Label("Title", systemImage: "text.quote")
+                Label(localization.localizedString("add.title.field"), systemImage: "text.quote")
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
                 
-                TextField("Enter title (auto-filled from URL)", text: $title)
+                TextField(localization.localizedString("add.title.placeholder"), text: $title)
                     .textFieldStyle(.plain)
                     .font(.body)
                     .padding(14)
@@ -138,12 +139,12 @@ struct AddBookmarkView: View {
             
             // Notes field (collapsible)
             VStack(alignment: .leading, spacing: 8) {
-                Label("Notes (Optional)", systemImage: "note.text")
+                Label(localization.localizedString("add.notes"), systemImage: "note.text")
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
                 
-                TextField("Add notes...", text: $notes, axis: .vertical)
+                TextField(localization.localizedString("add.notes.placeholder"), text: $notes, axis: .vertical)
                     .textFieldStyle(.plain)
                     .font(.body)
                     .lineLimit(3...5)
@@ -273,7 +274,7 @@ struct AddBookmarkView: View {
                 Image(systemName: "folder")
                     .font(.subheadline)
                     .foregroundStyle(themeManager.currentTheme.primaryColor)
-                Text("Category")
+                Text(localization.localizedString("add.category"))
                     .font(.headline)
             }
             
@@ -362,7 +363,7 @@ struct AddBookmarkView: View {
             Button {
                 dismiss()
             } label: {
-                Text("Cancel")
+                Text(localization.localizedString("add.cancel"))
                     .foregroundStyle(themeManager.currentTheme.primaryColor)
             }
         }
@@ -371,7 +372,7 @@ struct AddBookmarkView: View {
             Button {
                 saveBookmark()
             } label: {
-                Text("Save")
+                Text(localization.localizedString("add.save"))
                     .fontWeight(.semibold)
                     .foregroundStyle(themeManager.currentTheme.primaryColor)
             }

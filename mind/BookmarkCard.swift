@@ -10,7 +10,9 @@ import SwiftData
 
 struct BookmarkCard: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(LocalizationManager.self) private var localization
     let bookmark: Bookmark
+    var isCompact: Bool = false
     
     var body: some View {
         cardContent
@@ -23,6 +25,20 @@ struct BookmarkCard: View {
     // MARK: - Card Content
     
     private var cardContent: some View {
+        Group {
+            if isCompact {
+                compactLayout
+            } else {
+                fullLayout
+            }
+        }
+        .padding(isCompact ? 12 : 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    // MARK: - Full Layout (List View)
+    
+    private var fullLayout: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header with category and status
             HStack {
@@ -43,10 +59,17 @@ struct BookmarkCard: View {
                 }
             }
             
-            // Title
-            Text(bookmark.title)
-                .font(.headline)
-                .lineLimit(2)
+            // Title with Thumbnail
+            HStack(alignment: .top, spacing: 12) {
+                thumbnailView(size: 60)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(bookmark.title)
+                        .font(.headline)
+                        .lineLimit(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
             
             // URL
             Text(bookmark.url)
@@ -89,15 +112,123 @@ struct BookmarkCard: View {
                 Spacer()
                 
                 Button(action: openURL) {
-                    Label("Open", systemImage: "arrow.up.right")
+                    Label(localization.localizedString("common.open"), systemImage: "arrow.up.right")
                         .font(.caption)
                 }
                 .buttonStyle(.borderless)
             }
             .foregroundStyle(.secondary)
         }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    // MARK: - Compact Layout (Grid View)
+    
+    private var compactLayout: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Thumbnail centered
+            thumbnailView(size: 80)
+                .frame(maxWidth: .infinity, alignment: .center)
+            
+            // Title
+            Text(bookmark.title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+            
+            // Category badge
+            HStack {
+                Spacer()
+                categoryBadge
+                Spacer()
+            }
+            
+            // Read status
+            HStack {
+                Spacer()
+                Button(action: toggleRead) {
+                    Image(systemName: bookmark.isRead ? "checkmark.circle.fill" : "circle")
+                        .font(.title3)
+                        .foregroundStyle(bookmark.isRead ? .green : .secondary)
+                }
+                Spacer()
+            }
+        }
+    }
+    
+    // MARK: - Thumbnail View
+    
+    @ViewBuilder
+    private func thumbnailView(size: CGFloat) -> some View {
+        if let thumbnailURL = bookmark.thumbnailURL, !thumbnailURL.isEmpty {
+            AsyncImage(url: URL(string: thumbnailURL)) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: size, height: size)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(.white.opacity(0.3), lineWidth: 1)
+                        )
+                case .failure(_):
+                    faviconFallback(size: size)
+                case .empty:
+                    ProgressView()
+                        .frame(width: size, height: size)
+                @unknown default:
+                    faviconFallback(size: size)
+                }
+            }
+        } else {
+            faviconFallback(size: size)
+        }
+    }
+    
+    private func faviconFallback(size: CGFloat) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.4, green: 0.5, blue: 1.0).opacity(0.3),
+                            Color(red: 0.6, green: 0.3, blue: 0.9).opacity(0.3)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: size, height: size)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(.white.opacity(0.3), lineWidth: 1)
+                )
+            
+            // Extract first letter from title or domain
+            Text(extractInitial())
+                .font(size > 70 ? .title : .title2)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+        }
+    }
+    
+    private func extractInitial() -> String {
+        // Try to get first letter from title
+        if let firstChar = bookmark.title.first {
+            return String(firstChar).uppercased()
+        }
+        
+        // Fallback to domain initial
+        if let host = URL(string: bookmark.url)?.host {
+            if let firstChar = host.first {
+                return String(firstChar).uppercased()
+            }
+        }
+        
+        return "🔖"
     }
     
     private var categoryBadge: some View {
@@ -120,19 +251,19 @@ struct BookmarkCard: View {
     private var contextMenuContent: some View {
         Button(action: toggleRead) {
             Label(
-                bookmark.isRead ? "Mark as Unread" : "Mark as Read",
+                bookmark.isRead ? localization.localizedString("common.mark.unread") : localization.localizedString("common.mark.read"),
                 systemImage: bookmark.isRead ? "circle" : "checkmark.circle"
             )
         }
         
         Button(action: openURL) {
-            Label("Open in Browser", systemImage: "safari")
+            Label(localization.localizedString("common.open.browser"), systemImage: "safari")
         }
         
         Divider()
         
         Button(role: .destructive, action: deleteBookmark) {
-            Label("Delete", systemImage: "trash")
+            Label(localization.localizedString("common.delete"), systemImage: "trash")
         }
     }
     

@@ -6,37 +6,19 @@
 //
 
 import SwiftUI
+import StoreKit
 
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(ThemeManager.self) private var themeManager
-    @State private var selectedPlan: PricingPlan = .yearly
+    @State private var selectedProductID: PaywallManager.ProductID = .yearly
     @State private var isPurchasing = false
+    @State private var errorMessage: String?
     
-    enum PricingPlan {
-        case monthly
-        case yearly
-        
-        var price: String {
-            switch self {
-            case .monthly: return "$2.99"
-            case .yearly: return "$19.99"
-            }
-        }
-        
-        var period: String {
-            switch self {
-            case .monthly: return "per month"
-            case .yearly: return "per year"
-            }
-        }
-        
-        var savings: String? {
-            switch self {
-            case .monthly: return nil
-            case .yearly: return "Save 44%"
-            }
-        }
+    private var paywall = PaywallManager.shared
+    
+    private var selectedProduct: Product? {
+        paywall.products.first { $0.id == selectedProductID.rawValue }
     }
     
     var body: some View {
@@ -148,17 +130,21 @@ struct PaywallView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             VStack(spacing: 12) {
-                PricingCard(
-                    plan: .monthly,
-                    isSelected: selectedPlan == .monthly,
-                    action: { selectedPlan = .monthly }
-                )
-                
-                PricingCard(
-                    plan: .yearly,
-                    isSelected: selectedPlan == .yearly,
-                    action: { selectedPlan = .yearly }
-                )
+                if paywall.products.isEmpty {
+                    ProgressView("Loading...")
+                        .padding()
+                } else {
+                    ForEach(paywall.products, id: \.id) { product in
+                        if let productID = PaywallManager.ProductID(rawValue: product.id) {
+                            ProductCard(
+                                product: product,
+                                productID: productID,
+                                isSelected: selectedProductID == productID,
+                                action: { selectedProductID = productID }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -208,21 +194,26 @@ struct PaywallView: View {
     // MARK: - Actions
     
     private func purchasePremium() {
+        guard let product = selectedProduct else { return }
+        
         Task {
             isPurchasing = true
+            errorMessage = nil
             defer { isPurchasing = false }
             
             do {
-                try await PaywallManager.shared.purchasePremium()
+                try await paywall.purchase(product)
                 dismiss()
             } catch {
                 print("❌ Purchase failed: \(error)")
+                errorMessage = "Purchase failed. Please try again."
             }
         }
     }
     
     private func restorePurchases() {
         Task {
+            errorMessage = nil
             do {
                 try await PaywallManager.shared.restorePurchases()
                 dismiss()
@@ -267,22 +258,47 @@ struct FeatureRow: View {
     }
 }
 
-// MARK: - Pricing Card
+// MARK: - Product Card
 
-struct PricingCard: View {
-    let plan: PaywallView.PricingPlan
+struct ProductCard: View {
+    let product: Product
+    let productID: PaywallManager.ProductID
     let isSelected: Bool
     let action: () -> Void
+    
+    private var title: String {
+        switch productID {
+        case .monthly: return "Monthly"
+        case .yearly: return "Yearly"
+        case .lifetime: return "Lifetime"
+        }
+    }
+    
+    private var period: String {
+        switch productID {
+        case .monthly: return "per month"
+        case .yearly: return "per year"
+        case .lifetime: return "one-time payment"
+        }
+    }
+    
+    private var savings: String? {
+        switch productID {
+        case .monthly: return nil
+        case .yearly: return "Save 44%"
+        case .lifetime: return "Best Value"
+        }
+    }
     
     var body: some View {
         Button(action: action) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text(plan == .monthly ? "Monthly" : "Yearly")
+                        Text(title)
                             .font(.headline)
                         
-                        if let savings = plan.savings {
+                        if let savings = savings {
                             Text(savings)
                                 .font(.caption)
                                 .fontWeight(.semibold)
@@ -293,14 +309,14 @@ struct PricingCard: View {
                         }
                     }
                     
-                    Text(plan.period)
+                    Text(period)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 
                 Spacer()
                 
-                Text(plan.price)
+                Text(product.displayPrice)
                     .font(.title2)
                     .fontWeight(.bold)
             }

@@ -8,21 +8,23 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @Environment(LocalizationManager.self) private var localization
+    
     var body: some View {
         TabView {
             ContentView()
                 .tabItem {
-                    Label("Bookmarks", systemImage: "bookmark.fill")
+                    Label(localization.localizedString("tab.bookmarks"), systemImage: "bookmark.fill")
                 }
             
             StatisticsView()
                 .tabItem {
-                    Label("Statistics", systemImage: "chart.bar.fill")
+                    Label(localization.localizedString("tab.statistics"), systemImage: "chart.bar.fill")
                 }
             
             SettingsView()
                 .tabItem {
-                    Label("Settings", systemImage: "gearshape.fill")
+                    Label(localization.localizedString("tab.settings"), systemImage: "gearshape.fill")
                 }
         }
     }

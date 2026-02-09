@@ -12,6 +12,7 @@ import SwiftData
 struct mindApp: App {
     @State private var authManager = AuthManager()
     @State private var themeManager = ThemeManager()
+    @State private var localizationManager = LocalizationManager.shared
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     
     var sharedModelContainer: ModelContainer = {
@@ -44,6 +45,7 @@ struct mindApp: App {
             }
             .environment(authManager)
             .environment(themeManager)
+            .environment(localizationManager)
             .preferredColorScheme(themeManager.currentTheme.isDark ? .dark : .light)
             .tint(themeManager.currentTheme.accentColor)
             .task {

@@ -10,6 +10,7 @@ import SwiftUI
 struct AuthView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(ThemeManager.self) private var themeManager
+    @Environment(LocalizationManager.self) private var localization
     @State private var isSignUp = false
     @State private var email = ""
     @State private var password = ""
@@ -46,45 +47,41 @@ struct AuthView: View {
                             .multilineTextAlignment(.center)
                     }
                     
-                    // Demo account notice
-                    VStack(spacing: 8) {
-                        Text("Demo Mode")
+                    // Secure notice
+                    HStack(spacing: 8) {
+                        Image(systemName: "lock.shield.fill")
+                            .foregroundStyle(.green)
+                        Text(localization.localizedString("auth.secure"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("Any email + 6+ char password works")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                        Text("(Supabase integration coming soon)")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
                     }
-                    .padding()
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
                     .background(
                         .ultraThinMaterial,
-                        in: RoundedRectangle(cornerRadius: 12)
+                        in: Capsule()
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
+                        Capsule()
                             .strokeBorder(.white.opacity(0.2), lineWidth: 1)
                     )
                     .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
-                    .padding(.horizontal)
                     
                     // Form
                     VStack(spacing: 20) {
                         if isSignUp {
-                            TextField("Name", text: $name)
+                            TextField(localization.localizedString("auth.name"), text: $name)
                                 .textFieldStyle()
                                 .textContentType(.name)
                         }
                         
-                        TextField("Email", text: $email)
+                        TextField(localization.localizedString("auth.email"), text: $email)
                             .textFieldStyle()
                             .textContentType(.emailAddress)
                             .textInputAutocapitalization(.never)
                             .keyboardType(.emailAddress)
                         
-                        SecureField("Password", text: $password)
+                        SecureField(localization.localizedString("auth.password"), text: $password)
                             .textFieldStyle()
                             .textContentType(isSignUp ? .newPassword : .password)
                         
@@ -100,7 +97,7 @@ struct AuthView: View {
                                 ProgressView()
                                     .tint(.white)
                             } else {
-                                Text(isSignUp ? "Sign Up" : "Sign In")
+                                Text(isSignUp ? localization.localizedString("auth.signup") : localization.localizedString("auth.signin"))
                             }
                         }
                         .buttonStyle(PrimaryButtonStyle(theme: themeManager.currentTheme))
@@ -117,7 +114,7 @@ struct AuthView: View {
                         .foregroundStyle(themeManager.currentTheme.primaryColor)
                         
                         Button(action: { withAnimation { isSignUp.toggle() } }) {
-                            Text(isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
+                            Text(isSignUp ? localization.localizedString("auth.alreadyhave") : localization.localizedString("auth.donthave"))
                                 .font(.subheadline)
                         }
                         .foregroundStyle(.secondary)

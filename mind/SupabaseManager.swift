@@ -7,6 +7,7 @@
 
 import Foundation
 import Supabase
+import Auth
 
 @Observable
 @MainActor
@@ -23,7 +24,12 @@ final class SupabaseManager {
         
         self.client = SupabaseClient(
             supabaseURL: Config.supabaseURL,
-            supabaseKey: Config.supabaseAnonKey
+            supabaseKey: Config.supabaseAnonKey,
+            options: SupabaseClientOptions(
+                auth: .init(
+                    emitLocalSessionAsInitialSession: true
+                )
+            )
         )
     }
     

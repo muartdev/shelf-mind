@@ -12,6 +12,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ThemeManager.self) private var themeManager
     @Environment(AuthManager.self) private var authManager
+    @Environment(LocalizationManager.self) private var localization
     @Query(sort: \Bookmark.dateAdded, order: .reverse) private var bookmarks: [Bookmark]
     
     @State private var showingAddBookmark = false
@@ -20,6 +21,12 @@ struct ContentView: View {
     @State private var selectedCategory: String?
     @State private var showOnlyUnread = false
     @State private var isLoadingFromSupabase = false
+    @State private var viewMode: ViewMode = .list
+    
+    enum ViewMode {
+        case list
+        case grid
+    }
     
     var filteredBookmarks: [Bookmark] {
         var result = bookmarks
@@ -67,11 +74,11 @@ struct ContentView: View {
                     bookmarkListView
                 }
             }
-            .navigationTitle("MindShelf")
+            .navigationTitle(localization.localizedString("main.title"))
             .toolbar {
                 toolbarContent
             }
-            .searchable(text: $searchText, prompt: "Search bookmarks")
+            .searchable(text: $searchText, prompt: localization.localizedString("main.search"))
             .sheet(isPresented: $showingAddBookmark) {
                 AddBookmarkView()
             }
@@ -80,6 +87,10 @@ struct ContentView: View {
             }
             .task {
                 await loadBookmarksFromSupabase()
+                loadPendingBookmarksFromShareExtension()
+            }
+            .onAppear {
+                loadPendingBookmarksFromShareExtension()
             }
         }
     }
@@ -88,14 +99,13 @@ struct ContentView: View {
     
     private var bookmarkListView: some View {
         ScrollView {
-            LazyVStack(spacing: 16) {
+            VStack(spacing: 16) {
                 filterChipsView
                 
-                ForEach(filteredBookmarks) { bookmark in
-                    BookmarkCard(bookmark: bookmark)
-                        .onTapGesture {
-                            selectedBookmark = bookmark
-                        }
+                if viewMode == .list {
+                    listLayout
+                } else {
+                    gridLayout
                 }
             }
             .padding()
@@ -104,6 +114,31 @@ struct ContentView: View {
         .refreshable {
             // Pull to refresh - reload data
             await refreshBookmarks()
+        }
+    }
+    
+    private var listLayout: some View {
+        LazyVStack(spacing: 16) {
+            ForEach(filteredBookmarks) { bookmark in
+                BookmarkCard(bookmark: bookmark)
+                    .onTapGesture {
+                        selectedBookmark = bookmark
+                    }
+            }
+        }
+    }
+    
+    private var gridLayout: some View {
+        LazyVGrid(columns: [
+            GridItem(.flexible(), spacing: 16),
+            GridItem(.flexible(), spacing: 16)
+        ], spacing: 16) {
+            ForEach(filteredBookmarks) { bookmark in
+                BookmarkCard(bookmark: bookmark, isCompact: true)
+                    .onTapGesture {
+                        selectedBookmark = bookmark
+                    }
+            }
         }
     }
     
@@ -117,7 +152,7 @@ struct ContentView: View {
         ScrollView(.horizontal) {
             HStack(spacing: 12) {
                 FilterChip(
-                    title: "All",
+                    title: localization.localizedString("main.filter.all"),
                     icon: "square.grid.2x2",
                     isSelected: selectedCategory == nil,
                     action: { selectedCategory = nil }
@@ -254,13 +289,78 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - Share Extension Integration
+    
+    private func loadPendingBookmarksFromShareExtension() {
+        let defaults = UserDefaults(suiteName: "group.com.muartdev.mind")
+        
+        guard let pendingBookmarks = defaults?.array(forKey: "pendingBookmarks") as? [[String: Any]],
+              !pendingBookmarks.isEmpty else {
+            return
+        }
+        
+        print("📥 Found \(pendingBookmarks.count) pending bookmarks from Share Extension")
+        
+        for bookmarkData in pendingBookmarks {
+            guard let title = bookmarkData["title"] as? String,
+                  let url = bookmarkData["url"] as? String,
+                  let category = bookmarkData["category"] as? String else {
+                continue
+            }
+            
+            let bookmark = Bookmark(
+                title: title,
+                url: url,
+                notes: "",
+                category: category,
+                dateAdded: Date(),
+                isRead: false,
+                thumbnailURL: nil,
+                tags: []
+            )
+            
+            modelContext.insert(bookmark)
+            
+            // Also save to Supabase
+            if let userId = authManager.currentUser?.id {
+                Task {
+                    do {
+                        try await SupabaseManager.shared.createBookmark(bookmark, userId: userId)
+                        print("✅ Synced shared bookmark to Supabase: \(title)")
+                    } catch {
+                        print("❌ Failed to sync shared bookmark: \(error)")
+                    }
+                }
+            }
+        }
+        
+        // Clear pending bookmarks
+        defaults?.removeObject(forKey: "pendingBookmarks")
+        defaults?.synchronize()
+        
+        print("✅ Imported \(pendingBookmarks.count) bookmarks from Share Extension")
+    }
+    
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Button(action: toggleViewMode) {
+                Image(systemName: viewMode == .list ? "square.grid.2x2" : "list.bullet")
+                    .font(.headline)
+            }
+        }
+        
         ToolbarItem(placement: .topBarTrailing) {
             Button(action: { showingAddBookmark = true }) {
                 Image(systemName: "plus")
                     .font(.headline)
             }
+        }
+    }
+    
+    private func toggleViewMode() {
+        withAnimation(.smooth) {
+            viewMode = viewMode == .list ? .grid : .list
         }
     }
 }

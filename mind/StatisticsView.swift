@@ -12,6 +12,7 @@ import Charts
 struct StatisticsView: View {
     @Query private var bookmarks: [Bookmark]
     @Environment(ThemeManager.self) private var themeManager
+    @Environment(LocalizationManager.self) private var localization
     
     var totalBookmarks: Int { bookmarks.count }
     var readBookmarks: Int { bookmarks.filter { $0.isRead }.count }
@@ -68,7 +69,7 @@ struct StatisticsView: View {
                     endPoint: .bottomTrailing
                 )
             )
-            .navigationTitle("Statistics")
+            .navigationTitle(localization.localizedString("stats.title"))
             .navigationBarTitleDisplayMode(.large)
         }
     }
@@ -77,67 +78,95 @@ struct StatisticsView: View {
     // MARK: - Hero Section
     
     private var heroSection: some View {
-        VStack(spacing: 16) {
-            // Main number display
-            VStack(spacing: 8) {
-                Text("\(totalBookmarks)")
-                    .font(.system(size: 72, weight: .bold, design: .rounded))
-                    .foregroundStyle(.primary)
-                
-                Text("Total Bookmarks")
-                    .font(.title3)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 32)
-            .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(.ultraThinMaterial)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 24)
-                    .strokeBorder(.white.opacity(0.2), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.1), radius: 15, y: 8)
-            
-            // Progress indicator
-            HStack(spacing: 16) {
-                VStack(spacing: 4) {
-                    Text("\(readBookmarks)")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.primary)
-                    Text("Read")
+        VStack(spacing: 12) {
+            // Compact Stats Grid
+            HStack(spacing: 12) {
+                // Total
+                VStack(spacing: 8) {
+                    Text("\(totalBookmarks)")
+                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [themeManager.currentTheme.primaryColor, themeManager.currentTheme.secondaryColor],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    Text(localization.localizedString("stats.total"))
                         .font(.caption)
+                        .fontWeight(.medium)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
-                .padding()
-                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .padding(.vertical, 20)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 20)
                         .strokeBorder(.white.opacity(0.2), lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
+                .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
                 
-                VStack(spacing: 4) {
-                    Text("\(unreadBookmarks)")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.primary)
-                    Text("To Read")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                VStack(spacing: 12) {
+                    // Read
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(.green.gradient)
+                            .frame(width: 32, height: 32)
+                            .overlay {
+                                Image(systemName: "checkmark")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white)
+                            }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(readBookmarks)")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            Text(localization.localizedString("stats.read"))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(12)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                    )
+                    
+                    // Unread
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(.orange.gradient)
+                            .frame(width: 32, height: 32)
+                            .overlay {
+                                Image(systemName: "circle")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white)
+                            }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(unreadBookmarks)")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            Text(localization.localizedString("stats.toread"))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(12)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                    )
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .strokeBorder(.white.opacity(0.2), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
             }
         }
     }
@@ -147,21 +176,36 @@ struct StatisticsView: View {
     private var quickStatsSection: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("Overview")
-                    .font(.headline)
+                HStack(spacing: 8) {
+                    Image(systemName: "chart.pie.fill")
+                        .foregroundStyle(themeManager.currentTheme.primaryColor)
+                    Text(localization.localizedString("stats.progress"))
+                        .font(.headline)
+                }
                 Spacer()
-                Text(String(format: "%.0f%% Complete", readPercentage))
+                Text(String(format: "%.0f%% \(localization.localizedString("stats.complete"))", readPercentage))
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [themeManager.currentTheme.primaryColor, themeManager.currentTheme.secondaryColor],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
             }
             
-            // Slim progress bar
+            // Modern progress bar
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: 10)
                         .fill(.thinMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+                        )
                     
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: 10)
                         .fill(
                             LinearGradient(
                                 colors: [themeManager.currentTheme.primaryColor, themeManager.currentTheme.secondaryColor],
@@ -170,13 +214,19 @@ struct StatisticsView: View {
                             )
                         )
                         .frame(width: geometry.size.width * (readPercentage / 100))
-                        .animation(.smooth, value: readPercentage)
+                        .shadow(color: themeManager.currentTheme.primaryColor.opacity(0.5), radius: 4, x: 0, y: 2)
+                        .animation(.smooth(duration: 0.6), value: readPercentage)
                 }
             }
-            .frame(height: 12)
+            .frame(height: 16)
         }
         .padding()
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.08), radius: 10, y: 5)
     }
     
     // MARK: - Overview Section (Removed)
@@ -263,15 +313,22 @@ struct StatisticsView: View {
     private var categorySection: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("Categories")
-                    .font(.headline)
+                HStack(spacing: 8) {
+                    Image(systemName: "folder.fill")
+                        .foregroundStyle(themeManager.currentTheme.primaryColor)
+                    Text(localization.localizedString("stats.categories"))
+                        .font(.headline)
+                }
                 Spacer()
-                Text("\(categoryStats.count) types")
-                    .font(.subheadline)
+                Text("\(categoryStats.count) \(localization.localizedString("stats.types"))")
+                    .font(.caption)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(.thinMaterial, in: Capsule())
                     .foregroundStyle(.secondary)
             }
             
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
                 ForEach(categoryStats.prefix(5)) { stat in
                     CategoryChip(stat: stat)
                 }
@@ -279,6 +336,11 @@ struct StatisticsView: View {
         }
         .padding()
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.08), radius: 10, y: 5)
     }
     
     // MARK: - Activity Section
@@ -286,11 +348,18 @@ struct StatisticsView: View {
     private var activitySection: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("Activity")
-                    .font(.headline)
+                HStack(spacing: 8) {
+                    Image(systemName: "chart.bar.fill")
+                        .foregroundStyle(themeManager.currentTheme.primaryColor)
+                    Text(localization.localizedString("stats.activity"))
+                        .font(.headline)
+                }
                 Spacer()
-                Text("Last 7 days")
-                    .font(.subheadline)
+                Text(localization.localizedString("stats.last7days"))
+                    .font(.caption)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(.thinMaterial, in: Capsule())
                     .foregroundStyle(.secondary)
             }
             
@@ -301,25 +370,37 @@ struct StatisticsView: View {
                 )
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [themeManager.currentTheme.primaryColor.opacity(0.8), themeManager.currentTheme.secondaryColor.opacity(0.8)],
+                        colors: [themeManager.currentTheme.primaryColor, themeManager.currentTheme.secondaryColor],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
-                .cornerRadius(6)
+                .cornerRadius(8)
             }
             .chartXAxis {
                 AxisMarks(values: .stride(by: .day)) { value in
                     AxisValueLabel(format: .dateTime.weekday(.narrow))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
             }
             .chartYAxis {
-                AxisMarks(position: .leading)
+                AxisMarks(position: .leading) { value in
+                    AxisValueLabel()
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
-            .frame(height: 180)
+            .frame(height: 160)
+            .padding(.top, 8)
         }
         .padding()
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.08), radius: 10, y: 5)
     }
 }
 
@@ -327,40 +408,55 @@ struct StatisticsView: View {
 // MARK: - Category Chip
 
 struct CategoryChip: View {
+    @Environment(LocalizationManager.self) private var localization
     let stat: CategoryStat
     
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
             if let category = Category.allCases.first(where: { $0.rawValue.lowercased() == stat.name }) {
                 // Icon with category color
                 Circle()
                     .fill(category.color.gradient)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 40, height: 40)
                     .overlay {
                         Image(systemName: category.icon)
-                            .font(.system(size: 14))
+                            .font(.system(size: 16))
                             .foregroundStyle(.white)
                     }
+                    .shadow(color: category.color.opacity(0.3), radius: 4, x: 0, y: 2)
                 
-                Text(category.rawValue)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(category.rawValue)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Text("\(stat.count) \(localization.localizedString("stats.bookmarks"))")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             } else {
-                Text(stat.name.capitalized)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(stat.name.capitalized)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Text("\(stat.count) \(localization.localizedString("stats.bookmarks"))")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             
             Spacer()
             
             Text("\(stat.count)")
-                .font(.title3)
+                .font(.title2)
                 .fontWeight(.bold)
                 .foregroundStyle(.primary)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .padding(12)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+        )
     }
 }
 

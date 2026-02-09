@@ -11,6 +11,7 @@ import SwiftData
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(ThemeManager.self) private var themeManager
+    @Environment(LocalizationManager.self) private var localization
     @Environment(\.modelContext) private var modelContext
     @Query private var bookmarks: [Bookmark]
     
@@ -69,9 +70,12 @@ struct SettingsView: View {
                             .settingsCardStyle()
                         }
                         
+                        // Language Section
+                        languageSection
+                        
                         // Appearance Section
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Appearance")
+                            Text(localization.localizedString("settings.appearance"))
                                 .font(.headline)
                                 .foregroundStyle(.secondary)
                             
@@ -94,14 +98,14 @@ struct SettingsView: View {
                         
                         // Notifications
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("Notifications")
+                            Text(localization.localizedString("settings.notifications"))
                                 .font(.headline)
                                 .foregroundStyle(.secondary)
                             
-                            Toggle("Enable Notifications", isOn: $notificationsEnabled)
+                            Toggle(localization.localizedString("settings.enable.notifications"), isOn: $notificationsEnabled)
                             
                             if notificationsEnabled {
-                                DatePicker("Daily Reminder", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                                DatePicker(localization.localizedString("settings.daily.reminder"), selection: $reminderTime, displayedComponents: .hourAndMinute)
                             }
                         }
                         .padding()
@@ -109,7 +113,7 @@ struct SettingsView: View {
                         
                         // Data Management
                         VStack(spacing: 0) {
-                            Text("Data")
+                            Text(localization.localizedString("settings.data"))
                                 .font(.headline)
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -119,7 +123,7 @@ struct SettingsView: View {
                             VStack(spacing: 0) {
                                 Button(action: { showingExportSheet = true }) {
                                     HStack {
-                                        Label("Export Bookmarks", systemImage: "square.and.arrow.up")
+                                        Label(localization.localizedString("settings.export"), systemImage: "square.and.arrow.up")
                                         Spacer()
                                     }
                                     .foregroundStyle(.primary)
@@ -131,7 +135,7 @@ struct SettingsView: View {
                                 
                                 Button(action: { showingImportSheet = true }) {
                                     HStack {
-                                        Label("Import Bookmarks", systemImage: "square.and.arrow.down")
+                                        Label(localization.localizedString("settings.import"), systemImage: "square.and.arrow.down")
                                         Spacer()
                                     }
                                     .foregroundStyle(.primary)
@@ -143,7 +147,7 @@ struct SettingsView: View {
                                 
                                 Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
                                     HStack {
-                                        Label("Delete All Bookmarks", systemImage: "trash")
+                                        Label(localization.localizedString("settings.delete.all"), systemImage: "trash")
                                         Spacer()
                                     }
                                     .padding()
@@ -154,12 +158,12 @@ struct SettingsView: View {
                         
                         // Statistics
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("Statistics")
+                            Text(localization.localizedString("settings.statistics"))
                                 .font(.headline)
                                 .foregroundStyle(.secondary)
                             
                             HStack {
-                                Text("Total Bookmarks")
+                                Text(localization.localizedString("settings.total.bookmarks"))
                                 Spacer()
                                 Text("\(bookmarks.count)")
                                     .foregroundStyle(.secondary)
@@ -168,7 +172,7 @@ struct SettingsView: View {
                             Divider()
                             
                             HStack {
-                                Text("Unread")
+                                Text(localization.localizedString("settings.unread"))
                                 Spacer()
                                 Text("\(bookmarks.filter { !$0.isRead }.count)")
                                     .foregroundStyle(.secondary)
@@ -179,12 +183,12 @@ struct SettingsView: View {
                         
                         // About
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("About")
+                            Text(localization.localizedString("settings.about"))
                                 .font(.headline)
                                 .foregroundStyle(.secondary)
                             
                             HStack {
-                                Text("Version")
+                                Text(localization.localizedString("settings.version"))
                                 Spacer()
                                 Text("1.0.0")
                                     .foregroundStyle(.secondary)
@@ -194,7 +198,7 @@ struct SettingsView: View {
                             
                             Link(destination: URL(string: "https://github.com/muartdev/shelf-mind")!) {
                                 HStack {
-                                    Label("GitHub", systemImage: "link")
+                                    Label(localization.localizedString("settings.github"), systemImage: "link")
                                     Spacer()
                                     Image(systemName: "arrow.up.right")
                                         .font(.caption)
@@ -206,7 +210,7 @@ struct SettingsView: View {
                         
                         // Sign Out
                         Button(role: .destructive, action: signOut) {
-                            Text("Sign Out")
+                            Text(localization.localizedString("settings.signout"))
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .padding()
@@ -216,7 +220,7 @@ struct SettingsView: View {
                     .padding()
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle(localization.localizedString("settings.title"))
             .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showingExportSheet) {
                 ExportView(bookmarks: bookmarks)
@@ -234,6 +238,52 @@ struct SettingsView: View {
     
     // MARK: - Premium Section
     
+    private var languageSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(localization.localizedString("settings.language"))
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            
+            HStack(spacing: 12) {
+                ForEach(LocalizationManager.AppLanguage.allCases) { language in
+                    Button(action: {
+                        withAnimation(.smooth) {
+                            LocalizationManager.shared.currentLanguage = language
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            Text(language.flag)
+                                .font(.title2)
+                            Text(language.rawValue)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            LocalizationManager.shared.currentLanguage == language
+                                ? .ultraThinMaterial
+                                : .thinMaterial,
+                            in: RoundedRectangle(cornerRadius: 12)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(
+                                    LocalizationManager.shared.currentLanguage == language
+                                        ? themeManager.currentTheme.primaryColor
+                                        : .white.opacity(0.2),
+                                    lineWidth: LocalizationManager.shared.currentLanguage == language ? 2 : 1
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding()
+        .settingsCardStyle()
+    }
+    
     private var premiumSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             if PaywallManager.shared.isPremium {
@@ -241,7 +291,7 @@ struct SettingsView: View {
                 HStack {
                     Image(systemName: "crown.fill")
                         .foregroundStyle(.yellow)
-                    Text("Premium Active")
+                    Text(localization.localizedString("settings.premium.active"))
                         .font(.headline)
                     Spacer()
                     Text("✓")
@@ -269,15 +319,15 @@ struct SettingsView: View {
                             HStack {
                                 Image(systemName: "sparkles")
                                     .foregroundStyle(.yellow)
-                                Text("Upgrade to Premium")
+                                Text(localization.localizedString("settings.upgrade"))
                                     .font(.headline)
                             }
                             
-                            Text("Unlimited bookmarks, URL preview & more")
+                            Text(localization.localizedString("settings.premium.desc"))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                             
-                            Text("From $2.99/month")
+                            Text("\(localization.localizedString("settings.premium.from")) $2.99/month")
                                 .font(.caption)
                                 .foregroundStyle(.blue)
                         }
