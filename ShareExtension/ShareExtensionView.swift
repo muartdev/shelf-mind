@@ -96,7 +96,7 @@ struct ShareExtensionView: View {
                             
                             Picker("Category", selection: $category) {
                                 Text("📱 General").tag("general")
-                                Text("❌ X").tag("x (twitter)")
+                                Text("❌ X").tag("x")
                                 Text("📸 Instagram").tag("instagram")
                                 Text("▶️ YouTube").tag("youtube")
                                 Text("📄 Article").tag("article")
@@ -158,6 +158,9 @@ struct ShareExtensionView: View {
                 .padding()
             }
             .navigationBarHidden(true)
+            .onAppear {
+                suggestInfo()
+            }
         }
     }
     
@@ -185,5 +188,57 @@ struct ShareExtensionView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             onSave()
         }
+    }
+    
+    private func suggestInfo() {
+        // Suggest category based on URL
+        let lowercasedURL = url.lowercased()
+        if lowercasedURL.contains("twitter.com") || lowercasedURL.contains("x.com") {
+            category = "x"
+        } else if lowercasedURL.contains("instagram.com") {
+            category = "instagram"
+        } else if lowercasedURL.contains("youtube.com") || lowercasedURL.contains("youtu.be") {
+            category = "youtube"
+        } else if lowercasedURL.contains("medium.com") || lowercasedURL.contains("substack.com") {
+            category = "article"
+        }
+        
+        // Fetch title if missing
+        if title.isEmpty {
+            fetchTitle()
+        }
+    }
+    
+    private func fetchTitle() {
+        guard let url = URL(string: url) else { return }
+        
+        Task {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                if let html = String(data: data, encoding: .utf8) {
+                    // Very basic extraction for extension (to avoid code duplication or heavy dependencies)
+                    if let fetchedTitle = extractTitle(from: html) {
+                        DispatchQueue.main.async {
+                            if self.title.isEmpty {
+                                self.title = fetchedTitle
+                            }
+                        }
+                    }
+                }
+            } catch {
+                print("Failed to fetch title in extension: \(error)")
+            }
+        }
+    }
+    
+    private func extractTitle(from html: String) -> String? {
+        let pattern = "<title[^>]*>([^<]+)</title>"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
+            return nil
+        }
+        let nsString = html as NSString
+        let results = regex.matches(in: html, range: NSRange(location: 0, length: nsString.length))
+        guard let match = results.first, match.numberOfRanges > 1 else { return nil }
+        return nsString.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

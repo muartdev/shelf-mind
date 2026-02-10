@@ -69,7 +69,19 @@ struct ContentView: View {
                 .ignoresSafeArea()
                 
                 if filteredBookmarks.isEmpty {
-                    emptyStateView
+                    EmptyStateView(
+                        icon: selectedCategory != nil || showOnlyUnread ? "tray" : "bookmark.slash",
+                        title: emptyStateTitle,
+                        message: emptyStateMessage,
+                        buttonTitle: selectedCategory != nil || showOnlyUnread ? "Clear Filters" : "Add Your First Bookmark",
+                        action: {
+                            if selectedCategory != nil || showOnlyUnread {
+                                clearFilters()
+                            } else {
+                                showingAddBookmark = true
+                            }
+                        }
+                    )
                 } else {
                     bookmarkListView
                 }
@@ -271,10 +283,14 @@ struct ContentView: View {
             
             // Sync to local SwiftData
             for dto in supabaseBookmarks {
-                // Check if bookmark already exists locally
-                let existsLocally = bookmarks.contains(where: { $0.id == dto.id })
+                let bookmarkId = dto.id
+                let fetchDescriptor = FetchDescriptor<Bookmark>(
+                    predicate: #Predicate { $0.id == bookmarkId }
+                )
                 
-                if !existsLocally {
+                let existing = (try? modelContext.fetch(fetchDescriptor)) ?? []
+                
+                if existing.isEmpty {
                     let bookmark = Bookmark(
                         id: dto.id,
                         title: dto.title,

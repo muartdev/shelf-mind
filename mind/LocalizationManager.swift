@@ -192,6 +192,27 @@ struct LocalizedStrings {
         "common.mark.read": "Mark as Read",
         "common.mark.unread": "Mark as Unread",
         "common.open.browser": "Open in Browser",
+        
+        // Paywall UI (New)
+        "paywall.most.popular": "Most Popular",
+        "paywall.recommended": "Recommended",
+        "paywall.yearly.desc": "Best value for long-term use",
+        "paywall.monthly.desc": "Pay monthly, cancel anytime",
+        "paywall.start.premium": "Start Premium",
+        "paywall.restore": "Restore Purchases",
+        "paywall.cancel.anytime": "Cancel anytime. Auto-renewable subscription.",
+        "paywall.loading": "Loading plans...",
+        "paywall.error": "Unable to load plans",
+        "paywall.retry": "Retry",
+        "paywall.failed": "Purchase failed. Please try again.",
+        "paywall.save": "Save 64%",
+        
+        // Account Deletion
+        "settings.member.since": "Member Since",
+        "settings.renews.on": "Renews/Expires",
+        "settings.delete.account": "Delete Account",
+        "settings.delete.account.message": "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.",
+        "settings.delete.confirm": "Delete My Account",
     ]
     
     // MARK: - Turkish
@@ -318,5 +339,26 @@ struct LocalizedStrings {
         "common.mark.read": "Okundu Olarak İşaretle",
         "common.mark.unread": "Okunmadı Olarak İşaretle",
         "common.open.browser": "Tarayıcıda Aç",
+        
+        // Paywall UI (New)
+        "paywall.most.popular": "En Popüler",
+        "paywall.recommended": "Önerilen",
+        "paywall.yearly.desc": "Uzun süreli kullanım için en iyi değer",
+        "paywall.monthly.desc": "Aylık öde, istediğin zaman iptal et",
+        "paywall.start.premium": "Premium'u Başlat",
+        "paywall.restore": "Satın Alımları Geri Yükle",
+        "paywall.cancel.anytime": "İstediğin zaman iptal et. Otomatik yenilenen abonelik.",
+        "paywall.loading": "Planlar yükleniyor...",
+        "paywall.error": "Planlar yüklenemedi",
+        "paywall.retry": "Tekrar Dene",
+        "paywall.failed": "Satın alma başarısız. Lütfen tekrar dene.",
+        "paywall.save": "%64 Tasarruf",
+        
+        // Account Deletion
+        "settings.member.since": "Üyelik Başlangıcı",
+        "settings.renews.on": "Yenileme/Bitiş",
+        "settings.delete.account": "Hesabı Sil",
+        "settings.delete.account.message": "Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm verileriniz kalıcı olarak silinecektir.",
+        "settings.delete.confirm": "Hesabımı Sil",
     ]
 }

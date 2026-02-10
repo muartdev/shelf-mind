@@ -71,7 +71,9 @@ final class SupabaseManager {
             email: response.email,
             name: response.name,
             avatarURL: response.avatar_url,
-            createdAt: response.created_at
+            createdAt: response.created_at,
+            isPremium: response.is_premium ?? false,
+            premiumUntil: response.premium_until
         )
         
         return user
@@ -103,7 +105,9 @@ final class SupabaseManager {
             email: response.email,
             name: response.name,
             avatarURL: response.avatar_url,
-            createdAt: response.created_at
+            createdAt: response.created_at,
+            isPremium: response.is_premium ?? false,
+            premiumUntil: response.premium_until
         )
         
         return user
@@ -165,6 +169,33 @@ final class SupabaseManager {
             .eq("id", value: id.uuidString)
             .execute()
     }
+    
+    // MARK: - Account Management
+    
+    func deleteAccount(userId: UUID) async throws {
+        // Delete from public.users table
+        // We rely on this to trigger any necessary cleanups or just remove the profile
+        try await client.from("users")
+            .delete()
+            .eq("id", value: userId.uuidString)
+            .execute()
+            
+        // Note: Actual Auth user deletion usually requires Admin API or specific RPC.
+        // For this app, deleting the profile and signing out is the best client-side action.
+    }
+    
+    struct PremiumUpdate: Encodable {
+        let is_premium: Bool
+        let premium_until: Date?
+    }
+    
+    func updateUserPremiumStatus(userId: UUID, isPremium: Bool, expirationDate: Date?) async throws {
+        let update = PremiumUpdate(is_premium: isPremium, premium_until: expirationDate)
+        try await client.from("users")
+            .update(update)
+            .eq("id", value: userId.uuidString)
+            .execute()
+    }
 }
 
 // MARK: - DTOs (Data Transfer Objects)
@@ -175,6 +206,8 @@ struct UserProfile: Codable {
     let name: String
     let avatar_url: String?
     let created_at: Date
+    let is_premium: Bool?
+    let premium_until: Date?
 }
 
 struct BookmarkDTO: Codable {

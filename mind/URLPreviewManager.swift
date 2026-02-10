@@ -34,12 +34,17 @@ final class URLPreviewManager {
             throw URLError(.cannotDecodeContentData)
         }
         
-        // Parse Open Graph tags
+        // Parse Open Graph and Meta tags
         let title = extractMetaTag(html: html, property: "og:title") 
+                    ?? extractMetaTag(html: html, name: "twitter:title")
                     ?? extractTitle(html: html)
+        
         let description = extractMetaTag(html: html, property: "og:description")
-                         ?? extractMetaTag(html: html, name: "description")
+                          ?? extractMetaTag(html: html, name: "twitter:description")
+                          ?? extractMetaTag(html: html, name: "description")
+        
         let imageURL = extractMetaTag(html: html, property: "og:image")
+                      ?? extractMetaTag(html: html, name: "twitter:image")
         
         // Favicon
         let faviconURL = extractFavicon(html: html, baseURL: url)
@@ -64,6 +69,10 @@ final class URLPreviewManager {
             "&quot;": "\"",
             "&apos;": "'",
             "&#39;": "'",
+            "&ldquo;": "\"",
+            "&rdquo;": "\"",
+            "&lsquo;": "'",
+            "&rsquo;": "'",
             "&nbsp;": " "
         ]
         
@@ -94,15 +103,15 @@ final class URLPreviewManager {
     }
     
     private func extractMetaTag(html: String, property: String? = nil, name: String? = nil) -> String? {
-        var pattern = "<meta[^>]*"
+        var pattern = "<meta[^>]*(?:property|name)=[\"']"
         
         if let property = property {
-            pattern += "property=[\"']?\(property)[\"']?"
+            pattern += NSRegularExpression.escapedPattern(for: property)
         } else if let name = name {
-            pattern += "name=[\"']?\(name)[\"']?"
+            pattern += NSRegularExpression.escapedPattern(for: name)
         }
         
-        pattern += "[^>]*content=[\"']([^\"']+)[\"'][^>]*>"
+        pattern += "[\"'][^>]*content=[\"']([^\"']+)[\"'][^>]*>"
         
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
             return nil

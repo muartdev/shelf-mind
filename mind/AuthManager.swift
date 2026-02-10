@@ -27,6 +27,9 @@ final class AuthManager {
             currentUser = user
             isAuthenticated = true
             saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
+            
+            // Sync premium status from DB
+            PaywallManager.shared.setPremiumFromDatabase(isPremium: user.isPremium, expirationDate: user.premiumUntil)
         } catch {
             self.error = error.localizedDescription
         }
@@ -43,6 +46,9 @@ final class AuthManager {
             currentUser = user
             isAuthenticated = true
             saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
+            
+            // New user is free by default, but update anyway
+            PaywallManager.shared.setPremiumFromDatabase(isPremium: user.isPremium, expirationDate: user.premiumUntil)
         } catch {
             self.error = error.localizedDescription
         }
@@ -60,6 +66,24 @@ final class AuthManager {
         clearSession()
     }
     
+    func deleteAccount() async {
+        guard let userId = currentUser?.id else { return }
+        
+        isLoading = true
+        error = nil
+        
+        do {
+            // 1. Delete user data/profile
+            try await supabase.deleteAccount(userId: userId)
+            
+            // 2. Sign out
+            signOut()
+        } catch {
+            self.error = error.localizedDescription
+            isLoading = false
+        }
+    }
+    
     func loadCurrentUser() async {
         // Check local session first
         guard UserDefaults.standard.bool(forKey: "isAuthenticated") else { return }
@@ -69,6 +93,9 @@ final class AuthManager {
             if let user = try await supabase.getCurrentUser() {
                 currentUser = user
                 isAuthenticated = true
+                
+                // Sync premium status from DB
+                PaywallManager.shared.setPremiumFromDatabase(isPremium: user.isPremium, expirationDate: user.premiumUntil)
             } else {
                 clearSession()
             }

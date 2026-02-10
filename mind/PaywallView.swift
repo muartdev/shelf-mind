@@ -11,10 +11,12 @@ import StoreKit
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(ThemeManager.self) private var themeManager
+    @Environment(LocalizationManager.self) private var localization
     @State private var selectedProductID: PaywallManager.ProductID = .yearly
     @State private var isPurchasing = false
     @State private var errorMessage: String?
-    @State private var isAnimating = false
+    @State private var isAnimating = false // Deprecated pulse animation
+
     
     private var paywall = PaywallManager.shared
     
@@ -56,7 +58,7 @@ struct PaywallView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Close") {
+                    Button(localization.localizedString("common.close")) {
                         dismiss()
                     }
                 }
@@ -78,10 +80,10 @@ struct PaywallView: View {
                     )
                 )
             
-            Text("Unlock Premium")
+            Text(localization.localizedString("premium.title"))
                 .font(.system(size: 36, weight: .bold, design: .rounded))
             
-            Text("Get unlimited access to all features")
+            Text(localization.localizedString("premium.subtitle"))
                 .font(.title3)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -93,32 +95,32 @@ struct PaywallView: View {
         VStack(spacing: 16) {
             FeatureRow(
                 icon: "infinity",
-                title: "Unlimited Bookmarks",
-                description: "Save as many bookmarks as you want"
+                title: localization.localizedString("feature.unlimited"),
+                description: localization.localizedString("feature.unlimited.desc")
             )
             
             FeatureRow(
                 icon: "link.badge.plus",
-                title: "Smart URL Preview",
-                description: "Automatic title and thumbnail extraction"
+                title: localization.localizedString("feature.preview"),
+                description: localization.localizedString("feature.preview.desc")
             )
             
             FeatureRow(
                 icon: "chart.bar.fill",
-                title: "Advanced Statistics",
-                description: "Detailed analytics and insights"
+                title: localization.localizedString("feature.stats"),
+                description: localization.localizedString("feature.stats.desc")
             )
             
             FeatureRow(
                 icon: "icloud.fill",
-                title: "Cloud Sync",
-                description: "Access your bookmarks on all devices"
+                title: localization.localizedString("feature.sync"),
+                description: localization.localizedString("feature.sync.desc")
             )
             
             FeatureRow(
                 icon: "paintbrush.fill",
-                title: "Custom Themes",
-                description: "More beautiful color schemes"
+                title: localization.localizedString("feature.themes"),
+                description: localization.localizedString("feature.themes.desc")
             )
         }
         .padding(.vertical)
@@ -126,22 +128,22 @@ struct PaywallView: View {
     
     private var pricingSection: some View {
         VStack(spacing: 12) {
-            Text("Choose Your Plan")
+            Text(localization.localizedString("settings.premium"))
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
                 if paywall.products.isEmpty {
                     if paywall.isLoading {
-                        ProgressView("Loading plans...")
+                        ProgressView(localization.localizedString("paywall.loading"))
                             .padding()
                     } else {
                         VStack(spacing: 12) {
-                            Text("Unable to load plans")
+                            Text(localization.localizedString("paywall.error"))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                             
-                            Button("Retry") {
+                            Button(localization.localizedString("paywall.retry")) {
                                 Task {
                                     await paywall.loadProducts()
                                 }
@@ -151,18 +153,54 @@ struct PaywallView: View {
                         .padding()
                     }
                 } else {
-                    ForEach(paywall.products, id: \.id) { product in
+                    // Sort order: Yearly, Monthly, Lifetime
+                    // or just sort by price descending? 
+                    // Let's stick to a manual sort to ensure Yearly (Recommended) is top or middle.
+                    // Common pattern: Yearly, Monthly, Lifetime
+                    
+                    let products = paywall.products.sorted { p1, p2 in
+                        // Yearly first
+                        if p1.id == PaywallManager.ProductID.yearly.rawValue { return true }
+                        if p2.id == PaywallManager.ProductID.yearly.rawValue { return false }
+                        // Then Monthly
+                        if p1.id == PaywallManager.ProductID.monthly.rawValue { return true }
+                        if p2.id == PaywallManager.ProductID.monthly.rawValue { return false }
+                        return false
+                    }
+                    
+                    ForEach(products) { product in
                         if let productID = PaywallManager.ProductID(rawValue: product.id) {
-                            ProductCard(
-                                product: product,
-                                productID: productID,
+                            let isYearly = productID == .yearly
+                            let isLifetime = productID == .lifetime
+                            
+                            PlanCard(
+                                title: product.displayName,
+                                price: product.displayPrice,
+                                description: getDescription(for: productID),
                                 isSelected: selectedProductID == productID,
-                                action: { selectedProductID = productID }
+                                isRecommended: isYearly,
+                                isLifetime: isLifetime
                             )
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedProductID = productID
+                                }
+                            }
                         }
                     }
                 }
             }
+        }
+    }
+    
+    private func getDescription(for productID: PaywallManager.ProductID) -> String {
+        switch productID {
+        case .yearly:
+            return localization.localizedString("paywall.yearly.desc")
+        case .monthly:
+            return localization.localizedString("paywall.monthly.desc")
+        case .lifetime:
+            return localization.localizedString("premium.onetime")
         }
     }
     
@@ -173,10 +211,9 @@ struct PaywallView: View {
                     ProgressView()
                         .tint(.white)
                 } else {
-                    Text("Start Premium")
+                    Text(localization.localizedString("paywall.start.premium"))
                         .font(.headline)
                         .fontWeight(.bold)
-                        .scaleEffect(isAnimating ? 1.05 : 1.0)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -199,13 +236,19 @@ struct PaywallView: View {
             )
         }
         .disabled(isPurchasing || selectedProduct == nil)
+        .opacity(isPurchasing || selectedProduct == nil ? 0.5 : 1.0)
         .shadow(
-            color: themeManager.currentTheme.primaryColor.opacity(isAnimating ? 0.6 : 0.3),
-            radius: isAnimating ? 15 : 10,
+            color: themeManager.currentTheme.primaryColor.opacity(0.3),
+            radius: 10,
             y: 5
         )
-        .opacity(isPurchasing || selectedProduct == nil ? 0.6 : 1.0)
+
         .onAppear {
+            // Default to Yearly if available
+            if selectedProductID != .yearly {
+                selectedProductID = .yearly
+            }
+            
             withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
                 isAnimating = true
             }
@@ -214,13 +257,13 @@ struct PaywallView: View {
     
     private var footerSection: some View {
         VStack(spacing: 12) {
-            Button("Restore Purchases") {
+            Button(localization.localizedString("paywall.restore")) {
                 restorePurchases()
             }
             .font(.subheadline)
             .foregroundStyle(.secondary)
             
-            Text("Cancel anytime. Auto-renewable subscription.")
+            Text(localization.localizedString("paywall.cancel.anytime"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -243,7 +286,7 @@ struct PaywallView: View {
                 dismiss()
             } catch {
                 print("❌ Purchase failed: \(error)")
-                errorMessage = "Purchase failed. Please try again."
+                errorMessage = localization.localizedString("paywall.failed")
             }
         }
     }
@@ -271,9 +314,9 @@ struct FeatureRow: View {
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: icon)
-                .font(.title2)
-                .foregroundStyle(.blue)
-                .frame(width: 32)
+            .font(.title2)
+            .foregroundStyle(.blue)
+            .frame(width: 32)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -295,82 +338,73 @@ struct FeatureRow: View {
     }
 }
 
-// MARK: - Product Card
+// MARK: - Plan Card
 
-struct ProductCard: View {
-    let product: Product
-    let productID: PaywallManager.ProductID
+struct PlanCard: View {
+    let title: String
+    let price: String
+    let description: String
     let isSelected: Bool
-    let action: () -> Void
+    let isRecommended: Bool
+    let isLifetime: Bool
     
-    private var title: String {
-        switch productID {
-        case .monthly: return "Monthly"
-        case .yearly: return "Yearly"
-        case .lifetime: return "Lifetime"
-        }
-    }
-    
-    private var period: String {
-        switch productID {
-        case .monthly: return "per month"
-        case .yearly: return "per year"
-        case .lifetime: return "one-time payment"
-        }
-    }
-    
-    private var savings: String? {
-        switch productID {
-        case .monthly: return nil
-        case .yearly: return "Save 44%"
-        case .lifetime: return "Best Value"
-        }
-    }
-    
+    @Environment(ThemeManager.self) private var themeManager
+    @Environment(LocalizationManager.self) private var localization
+
     var body: some View {
-        Button(action: action) {
+        VStack(alignment: .leading, spacing: 8) {
+
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(title)
-                            .font(.headline)
-                        
-                        if let savings = savings {
-                            Text(savings)
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(.green, in: Capsule())
-                        }
-                    }
+                Text(title)
+                    .font(.headline)
+
+                if isRecommended {
+                    Text(localization.localizedString("paywall.most.popular"))
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.green.opacity(0.2))
+                        .foregroundStyle(Color.green)
+                        .cornerRadius(8)
                     
-                    Text(period)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    Text(localization.localizedString("paywall.save"))
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.2))
+                        .foregroundStyle(Color.orange)
+                        .cornerRadius(8)
                 }
                 
+                if isLifetime {
+                     Text(localization.localizedString("premium.bestvalue"))
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.2))
+                        .foregroundStyle(Color.blue)
+                        .cornerRadius(8)
+                }
+
                 Spacer()
-                
-                Text(product.displayPrice)
-                    .font(.title2)
-                    .fontWeight(.bold)
+
+                Text(price)
+                    .font(.title3.bold())
             }
-            .padding()
-            .background(
-                isSelected ? .ultraThinMaterial : .thinMaterial,
-                in: RoundedRectangle(cornerRadius: 16)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(
-                        isSelected ? .blue : .white.opacity(0.2),
-                        lineWidth: isSelected ? 2 : 1
-                    )
-            )
+            
+            Text(description)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
-        .buttonStyle(.plain)
+        .padding()
+        .background(.ultraThinMaterial.opacity(isSelected ? 1.0 : 0.8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isSelected ? .blue : .clear, lineWidth: 2)
+        )
+        .shadow(color: isSelected ? .blue.opacity(0.3) : .clear, radius: 10)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }
 

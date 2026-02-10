@@ -102,7 +102,7 @@ struct BookmarkCard: View {
             HStack {
                 Image(systemName: "clock")
                     .font(.caption2)
-                Text(bookmark.dateAdded, style: .relative)
+                Text(bookmark.dateAdded.relativeDisplayString())
                     .font(.caption)
                 
                 Spacer()

@@ -17,6 +17,8 @@ final class User {
     var createdAt: Date
     var notificationsEnabled: Bool
     var reminderTime: Date?
+    var isPremium: Bool = false
+    var premiumUntil: Date?
     
     init(
         id: UUID = UUID(),
@@ -25,7 +27,9 @@ final class User {
         avatarURL: String? = nil,
         createdAt: Date = Date(),
         notificationsEnabled: Bool = true,
-        reminderTime: Date? = nil
+        reminderTime: Date? = nil,
+        isPremium: Bool = false,
+        premiumUntil: Date? = nil
     ) {
         self.id = id
         self.email = email
@@ -34,6 +38,8 @@ final class User {
         self.createdAt = createdAt
         self.notificationsEnabled = notificationsEnabled
         self.reminderTime = reminderTime
+        self.isPremium = isPremium
+        self.premiumUntil = premiumUntil
     }
 }
 

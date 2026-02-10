@@ -16,6 +16,8 @@ final class PaywallManager {
     
     // Premium status
     private(set) var isPremium: Bool = false
+    private var isPremiumFromDatabase: Bool = false
+    private var databaseExpirationDate: Date?
     
     // Available products
     private(set) var products: [Product] = []
@@ -161,7 +163,7 @@ final class PaywallManager {
     // MARK: - Check Premium Status
     
     func updatePremiumStatus() async {
-        var hasPremium = false
+        var hasPremiumStoreKit = false
         var latestTransaction: StoreKit.Transaction?
         
         // Check all transactions
@@ -169,7 +171,7 @@ final class PaywallManager {
             if let transaction = try? checkVerified(result) {
                 // Check if it's a premium product
                 if ProductID(rawValue: transaction.productID) != nil {
-                    hasPremium = true
+                    hasPremiumStoreKit = true
                     latestTransaction = transaction
                     
                     // If it's a subscription, we might want the one with the latest expiration
@@ -182,8 +184,7 @@ final class PaywallManager {
             }
         }
         
-        isPremium = hasPremium
-        
+        // Apply StoreKit results
         if let transaction = latestTransaction {
             premiumExpirationDate = transaction.expirationDate
             premiumPurchaseDate = transaction.purchaseDate
@@ -192,9 +193,43 @@ final class PaywallManager {
             premiumPurchaseDate = nil
         }
         
+        // FINAL STATUS: StoreKit OR Database
+        // Database acts as a fallback for cross-Apple-ID/Cross-Device persistence
+        self.isPremium = hasPremiumStoreKit || isPremiumFromDatabase
+        
+        // SYNC TO DATABASE
+        // If we have a logged in user, sync their premium status to Supabase
+        if let userId = UserDefaults.standard.string(forKey: "userId"), let userUUID = UUID(uuidString: userId) {
+            // Only sync if StoreKit has a verified status
+            if hasPremiumStoreKit {
+                Task {
+                    do {
+                        try await SupabaseManager.shared.updateUserPremiumStatus(
+                            userId: userUUID,
+                            isPremium: true,
+                            expirationDate: premiumExpirationDate
+                        )
+                        print("✅ Premium status synced to Supabase")
+                    } catch {
+                        print("❌ Failed to sync premium status to Supabase: \(error)")
+                    }
+                }
+            }
+        }
+        
         print(isPremium ? "✅ User is Premium" : "⚠️ User is Free")
-        if let expiration = premiumExpirationDate {
+        if let expiration = premiumExpirationDate ?? databaseExpirationDate {
             print("📅 Expires: \(expiration)")
+        }
+    }
+    
+    func setPremiumFromDatabase(isPremium: Bool, expirationDate: Date?) {
+        self.isPremiumFromDatabase = isPremium
+        self.databaseExpirationDate = expirationDate
+        
+        // Re-evaluate overall status
+        Task {
+            await updatePremiumStatus()
         }
     }
     

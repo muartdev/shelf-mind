@@ -13,7 +13,9 @@ CREATE TABLE public.users (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     notifications_enabled BOOLEAN DEFAULT true,
-    reminder_time TIME DEFAULT '09:00:00'
+    reminder_time TIME DEFAULT '09:00:00',
+    is_premium BOOLEAN DEFAULT false,
+    premium_until TIMESTAMPTZ
 );
 
 -- Enable Row Level Security

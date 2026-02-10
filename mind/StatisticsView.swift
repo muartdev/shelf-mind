@@ -30,13 +30,17 @@ struct StatisticsView: View {
     
     var recentActivity: [ActivityData] {
         let calendar = Calendar.current
-        let last7Days = (0..<7).map { calendar.date(byAdding: .day, value: -$0, to: Date())! }
+        let now = Date()
+        let last7Days = (0..<7).map { calendar.date(byAdding: .day, value: -$0, to: now)! }
         
         return last7Days.reversed().map { date in
+            let startOfDate = calendar.startOfDay(for: date)
+            let endOfDate = calendar.date(byAdding: .day, value: 1, to: startOfDate)!
+            
             let count = bookmarks.filter { bookmark in
-                calendar.isDate(bookmark.dateAdded, inSameDayAs: date)
+                bookmark.dateAdded >= startOfDate && bookmark.dateAdded < endOfDate
             }.count
-            return ActivityData(date: date, count: count)
+            return ActivityData(date: startOfDate, count: count)
         }
     }
     

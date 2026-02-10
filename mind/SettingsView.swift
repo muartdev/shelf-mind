@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import StoreKit
 
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
@@ -18,6 +19,7 @@ struct SettingsView: View {
     @State private var notificationsEnabled = true
     @State private var reminderTime = Date()
     @State private var showingDeleteConfirmation = false
+    @State private var showingDeleteAccountConfirmation = false
     @State private var showingPaywall = false
     @State private var showingPaywallForTheme = false
     
@@ -114,6 +116,8 @@ struct SettingsView: View {
                         // Language Section (moved here)
                         languageSection
                         
+
+                        
                         // Data Management
                         VStack(spacing: 0) {
                             Text(localization.localizedString("settings.data"))
@@ -159,6 +163,15 @@ struct SettingsView: View {
                                 .padding()
                         }
                         .settingsCardStyle()
+                        
+                        // Delete Account (Bottom)
+                        Button(role: .destructive, action: { showingDeleteAccountConfirmation = true }) {
+                            Text(localization.localizedString("settings.delete.account"))
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        }
                     }
                     .padding()
                 }
@@ -175,6 +188,14 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { }
             } message: {
                 Text("This action cannot be undone. All your bookmarks will be permanently deleted.")
+            }
+            .confirmationDialog(localization.localizedString("settings.delete.account"), isPresented: $showingDeleteAccountConfirmation, titleVisibility: .visible) {
+                Button(localization.localizedString("settings.delete.confirm"), role: .destructive) {
+                    deleteAccount()
+                }
+                Button(localization.localizedString("common.cancel"), role: .cancel) { }
+            } message: {
+                Text(localization.localizedString("settings.delete.account.message"))
             }
         }
     }
@@ -227,6 +248,8 @@ struct SettingsView: View {
         .settingsCardStyle()
     }
     
+
+    
     private var premiumSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             if PaywallManager.shared.isPremium {
@@ -250,7 +273,7 @@ struct SettingsView: View {
                         VStack(spacing: 8) {
                             if let purchaseDate = PaywallManager.shared.premiumPurchaseDate {
                                 HStack {
-                                    Text("Member Since")
+                                    Text(localization.localizedString("settings.member.since"))
                                         .foregroundStyle(.secondary)
                                     Spacer()
                                     Text(purchaseDate.formatted(date: .abbreviated, time: .omitted))
@@ -260,7 +283,7 @@ struct SettingsView: View {
                             
                             if let expirationDate = PaywallManager.shared.premiumExpirationDate {
                                 HStack {
-                                    Text("Renews/Expires")
+                                    Text(localization.localizedString("settings.renews.on"))
                                         .foregroundStyle(.secondary)
                                     Spacer()
                                     Text(expirationDate.formatted(date: .abbreviated, time: .omitted))
@@ -327,6 +350,16 @@ struct SettingsView: View {
     private func deleteAllBookmarks() {
         for bookmark in bookmarks {
             modelContext.delete(bookmark)
+        }
+    }
+    
+    private func deleteAccount() {
+        Task {
+            // 1. Clear local bookmarks if needed (though sign out clears access)
+            deleteAllBookmarks()
+            
+            // 2. Perform account deletion
+            await authManager.deleteAccount()
         }
     }
 }
