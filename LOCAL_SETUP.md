@@ -28,7 +28,7 @@ cp Config.xcconfig.example Config.xcconfig
 3. Open `Config.xcconfig` and add your credentials:
 ```
 SUPABASE_URL = https://your-project-id.supabase.co
-SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_ANON_KEY = your-anon-key-here
 ```
 
 ### 3. Setup Database

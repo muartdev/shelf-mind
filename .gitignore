@@ -47,3 +47,17 @@ setup.sh
 # Configuration files with secrets
 Config.xcconfig
 
+# Secret files (local only)
+.env
+.env.*
+*.pem
+*.p12
+*.p8
+*.mobileprovision
+*.key
+*.keystore
+*.jks
+*.crt
+*.cer
+*.der
+*.pfx
