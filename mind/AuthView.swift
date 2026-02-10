@@ -116,9 +116,21 @@ struct AuthView: View {
                        
                        if let error = authManager.error {
                            let lowerError = error.lowercased()
-                           let localizedError = lowerError.contains("invalid login credentials") 
-                               ? localization.localizedString("auth.error.invalid_credentials") 
-                               : (lowerError.contains("network") ? localization.localizedString("auth.error.network") : error)
+                           let localizedError: String
+                           
+                           if lowerError.contains("invalid login credentials") {
+                               localizedError = localization.localizedString("auth.error.invalid_credentials")
+                           } else if lowerError.contains("missing email or phone") {
+                               localizedError = localization.localizedString("auth.error.missing_email")
+                           } else if lowerError.contains("at least 6 characters") {
+                               localizedError = localization.localizedString("auth.error.password_too_short")
+                           } else if lowerError.contains("already registered") {
+                               localizedError = localization.localizedString("auth.error.already_registered")
+                           } else if lowerError.contains("network") {
+                               localizedError = localization.localizedString("auth.error.network")
+                           } else {
+                               localizedError = error
+                           }
                            
                            Text(localizedError)
                                .font(.caption)
