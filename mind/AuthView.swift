@@ -115,24 +115,7 @@ struct AuthView: View {
                            .textContentType(isSignUp ? .newPassword : .password)
                        
                        if let error = authManager.error {
-                           let lowerError = error.lowercased()
-                           let localizedError: String
-                           
-                           if lowerError.contains("invalid login credentials") {
-                               localizedError = localization.localizedString("auth.error.invalid_credentials")
-                           } else if lowerError.contains("missing email or phone") {
-                               localizedError = localization.localizedString("auth.error.missing_email")
-                           } else if lowerError.contains("at least 6 characters") {
-                               localizedError = localization.localizedString("auth.error.password_too_short")
-                           } else if lowerError.contains("already registered") {
-                               localizedError = localization.localizedString("auth.error.already_registered")
-                           } else if lowerError.contains("network") {
-                               localizedError = localization.localizedString("auth.error.network")
-                           } else {
-                               localizedError = error
-                           }
-                           
-                           Text(localizedError)
+                           Text(getLocalizedError(error))
                                .font(.caption)
                                .foregroundStyle(.red)
                                .frame(maxWidth: .infinity, alignment: .leading)
@@ -172,6 +155,23 @@ struct AuthView: View {
         }
     }
     
+    private func getLocalizedError(_ error: String) -> String {
+        let lowerError = error.lowercased()
+        
+        if lowerError.contains("invalid login credentials") {
+            return localization.localizedString("auth.error.invalid_credentials")
+        } else if lowerError.contains("missing email or phone") {
+            return localization.localizedString("auth.error.missing_email")
+        } else if lowerError.contains("at least 6 characters") {
+            return localization.localizedString("auth.error.password_too_short")
+        } else if lowerError.contains("already registered") {
+            return localization.localizedString("auth.error.already_registered")
+        } else if lowerError.contains("network") {
+            return localization.localizedString("auth.error.network")
+        } else {
+            return error
+        }
+    }
 
     
     private func authenticate() {
