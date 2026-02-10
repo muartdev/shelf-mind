@@ -19,6 +19,8 @@ final class User {
     var reminderTime: Date?
     var isPremium: Bool = false
     var premiumUntil: Date?
+    var premiumPurchaseDate: Date?
+    var languageCode: String = "en"
     
     init(
         id: UUID = UUID(),
@@ -29,7 +31,9 @@ final class User {
         notificationsEnabled: Bool = true,
         reminderTime: Date? = nil,
         isPremium: Bool = false,
-        premiumUntil: Date? = nil
+        premiumUntil: Date? = nil,
+        premiumPurchaseDate: Date? = nil,
+        languageCode: String = "en"
     ) {
         self.id = id
         self.email = email
@@ -40,6 +44,8 @@ final class User {
         self.reminderTime = reminderTime
         self.isPremium = isPremium
         self.premiumUntil = premiumUntil
+        self.premiumPurchaseDate = premiumPurchaseDate
+        self.languageCode = languageCode
     }
 }
 

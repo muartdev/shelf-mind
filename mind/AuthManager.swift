@@ -18,6 +18,20 @@ final class AuthManager {
     
     private let supabase = SupabaseManager.shared
     
+    init() {
+        setupLanguageSync()
+    }
+    
+    private func setupLanguageSync() {
+        LocalizationManager.shared.onLanguageChange = { [weak self] language in
+            guard let self = self, let userId = self.currentUser?.id else { return }
+            
+            Task {
+                try? await self.supabase.updateUserProfile(userId: userId, languageCode: language.code)
+            }
+        }
+    }
+    
     func signIn(email: String, password: String) async {
         isLoading = true
         error = nil
@@ -29,7 +43,16 @@ final class AuthManager {
             saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
             
             // Sync premium status from DB
-            PaywallManager.shared.setPremiumFromDatabase(isPremium: user.isPremium, expirationDate: user.premiumUntil)
+            PaywallManager.shared.setPremiumFromDatabase(
+                isPremium: user.isPremium,
+                expirationDate: user.premiumUntil,
+                purchaseDate: user.premiumPurchaseDate
+            )
+            
+            // Apply language preference
+            if let language = LocalizationManager.AppLanguage.allCases.first(where: { $0.code == user.languageCode }) {
+                LocalizationManager.shared.currentLanguage = language
+            }
         } catch {
             self.error = error.localizedDescription
         }
@@ -48,7 +71,11 @@ final class AuthManager {
             saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
             
             // New user is free by default, but update anyway
-            PaywallManager.shared.setPremiumFromDatabase(isPremium: user.isPremium, expirationDate: user.premiumUntil)
+            PaywallManager.shared.setPremiumFromDatabase(
+                isPremium: user.isPremium,
+                expirationDate: user.premiumUntil,
+                purchaseDate: user.premiumPurchaseDate
+            )
         } catch {
             self.error = error.localizedDescription
         }
@@ -95,7 +122,16 @@ final class AuthManager {
                 isAuthenticated = true
                 
                 // Sync premium status from DB
-                PaywallManager.shared.setPremiumFromDatabase(isPremium: user.isPremium, expirationDate: user.premiumUntil)
+                PaywallManager.shared.setPremiumFromDatabase(
+                    isPremium: user.isPremium,
+                    expirationDate: user.premiumUntil,
+                    purchaseDate: user.premiumPurchaseDate
+                )
+                
+                // Apply language preference
+                if let language = LocalizationManager.AppLanguage.allCases.first(where: { $0.code == user.languageCode }) {
+                    LocalizationManager.shared.currentLanguage = language
+                }
             } else {
                 clearSession()
             }

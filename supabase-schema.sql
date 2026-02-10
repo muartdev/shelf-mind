@@ -15,7 +15,9 @@ CREATE TABLE public.users (
     notifications_enabled BOOLEAN DEFAULT true,
     reminder_time TIME DEFAULT '09:00:00',
     is_premium BOOLEAN DEFAULT false,
-    premium_until TIMESTAMPTZ
+    premium_until TIMESTAMPTZ,
+    premium_purchase_date TIMESTAMPTZ,
+    language_code TEXT DEFAULT 'en'
 );
 
 -- Enable Row Level Security

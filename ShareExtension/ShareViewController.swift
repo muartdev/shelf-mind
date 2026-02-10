@@ -14,29 +14,52 @@ class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Extract shared URL
+        // Extract shared item
         guard let extensionItem = extensionContext?.inputItems.first as? NSExtensionItem,
               let itemProvider = extensionItem.attachments?.first else {
             close()
             return
         }
         
-        // Check if it's a URL
-        if itemProvider.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
-            itemProvider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { [weak self] (item, error) in
+        // Check for URL or Title
+        let urlType = UTType.url.identifier
+        let textType = UTType.plainText.identifier
+        
+        if itemProvider.hasItemConformingToTypeIdentifier(urlType) {
+            itemProvider.loadItem(forTypeIdentifier: urlType, options: nil) { [weak self] (item, error) in
                 guard let self = self else { return }
                 
                 if let url = item as? URL {
-                    DispatchQueue.main.async {
-                        self.showShareUI(url: url.absoluteString, title: extensionItem.attributedContentText?.string)
-                    }
-                } else if let error = error {
-                    print("Error loading URL: \(error)")
+                    self.proceedWithURL(url.absoluteString, title: extensionItem.attributedContentText?.string)
+                } else if let urlString = item as? String {
+                    self.proceedWithURL(urlString, title: extensionItem.attributedContentText?.string)
+                } else if let urlData = item as? Data, let urlString = String(data: urlData, encoding: .utf8) {
+                    self.proceedWithURL(urlString, title: extensionItem.attributedContentText?.string)
+                } else {
+                    print("❌ ShareExtension: Could not cast item to URL/String/Data. Item: \(String(describing: item))")
+                    self.close()
+                }
+            }
+        } else if itemProvider.hasItemConformingToTypeIdentifier(textType) {
+            itemProvider.loadItem(forTypeIdentifier: textType, options: nil) { [weak self] (item, error) in
+                guard let self = self else { return }
+                
+                if let text = item as? String, text.lowercased().hasPrefix("http") {
+                    self.proceedWithURL(text, title: nil)
+                } else {
+                    print("❌ ShareExtension: Item conforms to text but is not a valid URL. Item: \(String(describing: item))")
                     self.close()
                 }
             }
         } else {
+            print("❌ ShareExtension: Item does not conform to URL or Text type. Types: \(itemProvider.registeredTypeIdentifiers)")
             close()
+        }
+    }
+    
+    private func proceedWithURL(_ url: String, title: String?) {
+        DispatchQueue.main.async {
+            self.showShareUI(url: url, title: title)
         }
     }
     

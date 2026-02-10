@@ -41,14 +41,10 @@ enum AppTheme: String, CaseIterable, Identifiable {
     
     var displayName: String {
         switch self {
-        case .bluePurpleLight:
-            return "Blue Purple"
-        case .orangePinkLight:
-            return "Orange Pink"
-        case .bluePurpleDark:
-            return "Blue Purple"
-        case .orangePinkDark:
-            return "Orange Pink"
+        case .bluePurpleLight, .bluePurpleDark:
+            return LocalizationManager.shared.localizedString("theme.blue.purple")
+        case .orangePinkLight, .orangePinkDark:
+            return LocalizationManager.shared.localizedString("theme.orange.pink")
         }
     }
     

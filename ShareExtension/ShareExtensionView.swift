@@ -16,6 +16,16 @@ struct ShareExtensionView: View {
     @State private var title: String
     @State private var category: String = "general"
     @State private var isSaving = false
+    @State private var showSuccess = false
+    
+    // Simple local localization for extension
+    private var isTurkish: Bool {
+        Locale.current.language.languageCode?.identifier == "tr"
+    }
+    
+    private func loc(_ en: String, _ tr: String) -> String {
+        isTurkish ? tr : en
+    }
     
     init(url: String, suggestedTitle: String?, onSave: @escaping () -> Void, onCancel: @escaping () -> Void) {
         self.url = url
@@ -44,11 +54,13 @@ struct ShareExtensionView: View {
                 VStack(spacing: 24) {
                     // Header
                     VStack(spacing: 8) {
-                        Image(systemName: "bookmark.circle.fill")
-                            .font(.system(size: 48))
-                            .foregroundStyle(.white)
+                        Image("mindshelf_logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 80, height: 80)
+                            .shadow(color: .black.opacity(0.2), radius: 10, y: 5)
                         
-                        Text("Save to MindShelf")
+                        Text(loc("Save to MindShelf", "MindShelf'e Kaydet"))
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundStyle(.white)
@@ -156,6 +168,25 @@ struct ShareExtensionView: View {
                     Spacer()
                 }
                 .padding()
+                .blur(radius: showSuccess ? 10 : 0)
+                
+                // Success Overlay
+                if showSuccess {
+                    VStack(spacing: 20) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.system(size: 80))
+                            .foregroundStyle(.white)
+                            .symbolEffect(.bounce, value: showSuccess)
+                        
+                        Text(loc("Saved Successfully!", "Başarıyla Kaydedildi!"))
+                            .font(.title2)
+                            .bold()
+                            .foregroundStyle(.white)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.black.opacity(0.4))
+                    .transition(.opacity.combined(with: .scale))
+                }
             }
             .navigationBarHidden(true)
             .onAppear {
@@ -184,8 +215,14 @@ struct ShareExtensionView: View {
         defaults?.set(pendingBookmarks, forKey: "pendingBookmarks")
         defaults?.synchronize()
         
-        // Slight delay for UX
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        // Success feedback
+        withAnimation(.spring()) {
+            showSuccess = true
+            isSaving = false
+        }
+        
+        // Finalize
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             onSave()
         }
     }

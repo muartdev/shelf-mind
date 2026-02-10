@@ -12,9 +12,7 @@ extension Date {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .full
         formatter.dateTimeStyle = .named
-        
-        // Note: For multi-language, you'd set formatter.locale
-        // For now, we use the system locale or pass it in
+        formatter.locale = Locale(identifier: language)
         
         return formatter.localizedString(for: self, relativeTo: Date())
     }

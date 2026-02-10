@@ -13,9 +13,12 @@ import SwiftUI
 final class LocalizationManager {
     static let shared = LocalizationManager()
     
+    var onLanguageChange: ((AppLanguage) -> Void)?
+    
     var currentLanguage: AppLanguage {
         didSet {
             UserDefaults.standard.set(currentLanguage.code, forKey: "app_language")
+            onLanguageChange?(currentLanguage)
         }
     }
     
@@ -180,6 +183,7 @@ struct LocalizedStrings {
         "auth.donthave": "Don't have an account? Sign Up",
         "auth.alreadyhave": "Already have an account? Sign In",
         "auth.secure": "Secure Authentication with Supabase",
+        "auth.subtitle": "Save and organize your favorite content",
         
         // Common
         "common.close": "Close",
@@ -213,6 +217,30 @@ struct LocalizedStrings {
         "settings.delete.account": "Delete Account",
         "settings.delete.account.message": "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.",
         "settings.delete.confirm": "Delete My Account",
+        
+        // Themes
+        "theme.blue.purple": "Blue Purple",
+        "theme.orange.pink": "Orange Pink",
+        "theme.light": "Light",
+        "theme.dark": "Dark",
+        
+        // Auth Errors
+        "auth.error.invalid_credentials": "Invalid login credentials",
+        "auth.error.missing_email": "Missing email or phone number",
+        "auth.error.password_too_short": "Password should be at least 6 characters",
+        "auth.error.already_registered": "User already registered",
+        "auth.error.network": "Network error. Please check your connection.",
+        "auth.error.unknown": "An unknown error occurred",
+        
+        // Premium Management
+        "settings.premium.manage": "Manage Subscription",
+        "settings.premium.manage.desc": "View and manage your subscription on App Store",
+        "settings.premium.benefits": "Premium Benefits",
+        "settings.premium.status.active": "Active",
+        "settings.premium.status.cancelled": "Cancelled",
+        "settings.premium.expiration.desc": "You have access to all features until this date.",
+        "settings.premium.cancellation.title": "How to Cancel?",
+        "settings.premium.cancellation.desc": "You can manage or cancel your subscription at any time through your App Store account settings.",
     ]
     
     // MARK: - Turkish
@@ -327,6 +355,7 @@ struct LocalizedStrings {
         "auth.donthave": "Hesabın yok mu? Kayıt Ol",
         "auth.alreadyhave": "Zaten hesabın var mı? Giriş Yap",
         "auth.secure": "Supabase ile Güvenli Kimlik Doğrulama",
+        "auth.subtitle": "Favori içeriklerini kaydet ve düzenle",
         
         // Common
         "common.close": "Kapat",
@@ -360,5 +389,29 @@ struct LocalizedStrings {
         "settings.delete.account": "Hesabı Sil",
         "settings.delete.account.message": "Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm verileriniz kalıcı olarak silinecektir.",
         "settings.delete.confirm": "Hesabımı Sil",
+        
+        // Themes
+        "theme.blue.purple": "Mavi Mor",
+        "theme.orange.pink": "Turuncu Pembe",
+        "theme.light": "Açık",
+        "theme.dark": "Koyu",
+        
+        // Auth Errors
+        "auth.error.invalid_credentials": "Geçersiz giriş bilgileri",
+        "auth.error.missing_email": "E-posta veya telefon numarası eksik",
+        "auth.error.password_too_short": "Şifre en az 6 karakter olmalıdır",
+        "auth.error.already_registered": "Kullanıcı zaten kayıtlı",
+        "auth.error.network": "Ağ hatası. Lütfen bağlantınızı kontrol edin.",
+        "auth.error.unknown": "Bilinmeyen bir hata oluştu",
+        
+        // Premium Management
+        "settings.premium.manage": "Aboneliği Yönet",
+        "settings.premium.manage.desc": "App Store üzerinden aboneliğinizi dondurun veya iptal edin",
+        "settings.premium.benefits": "Premium Avantajları",
+        "settings.premium.status.active": "Aktif",
+        "settings.premium.status.cancelled": "İptal Edildi",
+        "settings.premium.expiration.desc": "Bu tarihe kadar tüm premium özellikleri kullanmaya devam edebilirsiniz.",
+        "settings.premium.cancellation.title": "Nasıl İptal Edilir?",
+        "settings.premium.cancellation.desc": "Aboneliğinizi istediğiniz zaman App Store hesap ayarlarınız üzerinden yönetebilir veya iptal edebilirsiniz.",
     ]
 }

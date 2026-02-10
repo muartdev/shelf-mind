@@ -22,6 +22,7 @@ struct SettingsView: View {
     @State private var showingDeleteAccountConfirmation = false
     @State private var showingPaywall = false
     @State private var showingPaywallForTheme = false
+    @State private var showingPremiumDetails = false
     
     var body: some View {
         NavigationStack {
@@ -254,61 +255,78 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 16) {
             if PaywallManager.shared.isPremium {
                 // Premium Badge & Info
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        Image(systemName: "crown.fill")
-                            .foregroundStyle(.yellow)
-                        Text(localization.localizedString("settings.premium.active"))
-                            .font(.headline)
-                        Spacer()
-                        Text("✓")
-                            .font(.title3)
-                            .foregroundStyle(.green)
-                    }
-                    
-                    if PaywallManager.shared.premiumPurchaseDate != nil || PaywallManager.shared.premiumExpirationDate != nil {
-                        Divider()
-                            .background(.white.opacity(0.2))
-                        
-                        VStack(spacing: 8) {
-                            if let purchaseDate = PaywallManager.shared.premiumPurchaseDate {
-                                HStack {
-                                    Text(localization.localizedString("settings.member.since"))
-                                        .foregroundStyle(.secondary)
-                                    Spacer()
-                                    Text(purchaseDate.formatted(date: .abbreviated, time: .omitted))
-                                        .fontWeight(.medium)
-                                }
-                            }
-                            
-                            if let expirationDate = PaywallManager.shared.premiumExpirationDate {
-                                HStack {
-                                    Text(localization.localizedString("settings.renews.on"))
-                                        .foregroundStyle(.secondary)
-                                    Spacer()
-                                    Text(expirationDate.formatted(date: .abbreviated, time: .omitted))
-                                        .fontWeight(.medium)
-                                }
-                            }
+                Button(action: { showingPremiumDetails = true }) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Image(systemName: "crown.fill")
+                                .foregroundStyle(.yellow)
+                            Text(localization.localizedString("settings.premium.active"))
+                                .font(.headline)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
-                        .font(.caption)
+                        
+                        // ... rest of the existing premium info ...
+                        if PaywallManager.shared.premiumPurchaseDate != nil || PaywallManager.shared.premiumExpirationDate != nil {
+                            Divider()
+                                .background(.white.opacity(0.2))
+                            
+                            VStack(spacing: 8) {
+                                if let purchaseDate = PaywallManager.shared.premiumPurchaseDate {
+                                    HStack {
+                                        Text(localization.localizedString("settings.member.since"))
+                                            .foregroundStyle(.secondary)
+                                        Spacer()
+                                        Text(purchaseDate.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: localization.currentLanguage.code))))
+                                            .fontWeight(.medium)
+                                    }
+                                }
+                                
+                                if PaywallManager.shared.isLifetime {
+                                    HStack {
+                                        Text(localization.localizedString("settings.renews.on"))
+                                            .foregroundStyle(.secondary)
+                                        Spacer()
+                                        Text(localization.localizedString("premium.lifetime"))
+                                            .fontWeight(.medium)
+                                            .foregroundStyle(.yellow)
+                                    }
+                                } else if let expirationDate = PaywallManager.shared.premiumExpirationDate {
+                                    HStack {
+                                        Text(localization.localizedString("settings.renews.on"))
+                                            .foregroundStyle(.secondary)
+                                        Spacer()
+                                        Text(expirationDate.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: localization.currentLanguage.code))))
+                                            .fontWeight(.medium)
+                                    }
+                                }
+                            }
+                            .font(.caption)
+                        }
                     }
+                    .padding()
+                    .background(
+                        LinearGradient(
+                            colors: [.yellow.opacity(0.2), .orange.opacity(0.2)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        in: RoundedRectangle(cornerRadius: 16)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(.yellow.opacity(0.3), lineWidth: 1)
+                    )
                 }
-                .padding()
-                .background(
-                    LinearGradient(
-                        colors: [.yellow.opacity(0.2), .orange.opacity(0.2)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    in: RoundedRectangle(cornerRadius: 16)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .strokeBorder(.yellow.opacity(0.3), lineWidth: 1)
-                )
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showingPremiumDetails) {
+                    premiumDetailView
+                }
             } else {
                 // Upgrade CTA
+                // ... same as before ...
                 Button(action: { showingPaywall = true }) {
                     HStack {
                         VStack(alignment: .leading, spacing: 8) {
@@ -343,6 +361,128 @@ struct SettingsView: View {
         }
     }
     
+    private var premiumDetailView: some View {
+        NavigationStack {
+            ZStack {
+                themeManager.currentTheme.gradientColors[0].opacity(0.1).ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Header
+                        VStack(spacing: 16) {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 60))
+                                .foregroundStyle(.yellow)
+                                .shadow(radius: 10)
+                            
+                            Text(localization.localizedString("settings.premium.active"))
+                                .font(.title)
+                                .bold()
+                        }
+                        .padding(.top, 40)
+                        
+                        // Benefits List
+                        VStack(alignment: .leading, spacing: 20) {
+                            Text(localization.localizedString("settings.premium.benefits"))
+                                .font(.headline)
+                                .padding(.horizontal)
+                            
+                            VStack(spacing: 1) {
+                                BenefitRow(icon: "infinity", title: localization.localizedString("feature.unlimited"), desc: localization.localizedString("feature.unlimited.desc"))
+                                Divider().padding(.leading, 56)
+                                BenefitRow(icon: "link.badge.plus", title: localization.localizedString("feature.preview"), desc: localization.localizedString("feature.preview.desc"))
+                                Divider().padding(.leading, 56)
+                                BenefitRow(icon: "chart.bar.fill", title: localization.localizedString("feature.stats"), desc: localization.localizedString("feature.stats.desc"))
+                                Divider().padding(.leading, 56)
+                                BenefitRow(icon: "paintbrush.fill", title: localization.localizedString("feature.themes"), desc: localization.localizedString("feature.themes.desc"))
+                            }
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                        }
+                        .padding(.horizontal)
+                        
+                        if !PaywallManager.shared.isLifetime {
+                            // Subscription Info
+                            VStack(alignment: .leading, spacing: 20) {
+                                Text(localization.localizedString("settings.account"))
+                                    .font(.headline)
+                                    .padding(.horizontal)
+                                
+                                VStack(spacing: 16) {
+                                    // Status & Expiration
+                                    if let expirationDate = PaywallManager.shared.premiumExpirationDate {
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            HStack {
+                                                Text(localization.localizedString("settings.renews.on"))
+                                                    .foregroundStyle(.secondary)
+                                                Spacer()
+                                                Text(expirationDate.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: localization.currentLanguage.code))))
+                                                    .fontWeight(.medium)
+                                            }
+                                            
+                                            Text(localization.localizedString("settings.premium.expiration.desc"))
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        .padding()
+                                        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+                                    }
+                                    
+                                    // Cancellation Guide
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        HStack {
+                                            Image(systemName: "questionmark.circle.fill")
+                                                .foregroundStyle(.blue)
+                                            Text(localization.localizedString("settings.premium.cancellation.title"))
+                                                .fontWeight(.medium)
+                                        }
+                                        
+                                        Text(localization.localizedString("settings.premium.cancellation.desc"))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                        
+                                        Button(action: openSubscriptionManagement) {
+                                            HStack {
+                                                Text(localization.localizedString("settings.premium.manage"))
+                                                    .fontWeight(.semibold)
+                                                Image(systemName: "arrow.up.right")
+                                            }
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 12)
+                                            .background(themeManager.currentTheme.primaryColor, in: RoundedRectangle(cornerRadius: 12))
+                                            .foregroundStyle(.white)
+                                        }
+                                    }
+                                    .padding()
+                                    .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+                                }
+                                .padding(8)
+                                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                            }
+                            .padding(.horizontal)
+                        }
+                    }
+                    .padding(.bottom, 40)
+                }
+            }
+            .navigationTitle(localization.localizedString("settings.premium"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(localization.localizedString("common.done")) {
+                        showingPremiumDetails = false
+                    }
+                }
+            }
+        }
+    }
+    
+    private func openSubscriptionManagement() {
+        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+            UIApplication.shared.open(url)
+        }
+    }
+    
     private func signOut() {
         authManager.signOut()
     }
@@ -367,6 +507,7 @@ struct SettingsView: View {
 // MARK: - Theme Card
 
 struct ThemeCard: View {
+    @Environment(LocalizationManager.self) private var localization
     let theme: AppTheme
     let isSelected: Bool
     let action: () -> Void
@@ -397,7 +538,7 @@ struct ThemeCard: View {
                         .fontWeight(isSelected ? .semibold : .regular)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
-                    Text(theme.isDark ? "Dark" : "Light")
+                    Text(localization.localizedString(theme.isDark ? "theme.dark" : "theme.light"))
                         .font(.system(size: 9))
                         .foregroundStyle(.secondary)
                 }
@@ -434,4 +575,37 @@ extension View {
     return SettingsView()
         .environment(authManager)
         .environment(ThemeManager())
+}
+
+// MARK: - Premium Benefit Row
+
+struct BenefitRow: View {
+    let icon: String
+    let title: String
+    let desc: String
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(.yellow.opacity(0.1))
+                    .frame(width: 40, height: 40)
+                Image(systemName: icon)
+                    .foregroundStyle(.yellow)
+                    .font(.subheadline)
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text(desc)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Spacer()
+        }
+        .padding()
+    }
 }

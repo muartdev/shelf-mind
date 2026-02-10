@@ -33,18 +33,46 @@ struct AuthView: View {
                     
                     // Logo and title
                     VStack(spacing: 16) {
-                        Image(systemName: "book.circle.fill")
-                            .font(.system(size: 80))
-                            .foregroundStyle(themeManager.currentTheme.primaryColor)
+                        Image("mindshelf_logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 120, height: 120)
+                            .shadow(color: themeManager.currentTheme.primaryColor.opacity(0.3), radius: 20, x: 0, y: 10)
                         
                         Text("MindShelf")
                             .font(.largeTitle)
                             .bold()
                         
-                        Text("Save and organize your favorite content")
+                        Text(localization.localizedString("auth.subtitle"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
+                    }
+                    
+                    // Language Switcher (Login screen)
+                    HStack(spacing: 20) {
+                        ForEach(LocalizationManager.AppLanguage.allCases) { language in
+                            Button(action: {
+                                withAnimation(.smooth) {
+                                    localization.currentLanguage = language
+                                }
+                            }) {
+                                Text("\(language.flag) \(language.rawValue)")
+                                    .font(.caption)
+                                    .fontWeight(localization.currentLanguage == language ? .bold : .regular)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        localization.currentLanguage == language ? .white.opacity(0.1) : .clear,
+                                        in: Capsule()
+                                    )
+                                    .overlay(
+                                        Capsule()
+                                            .strokeBorder(localization.currentLanguage == language ? .white.opacity(0.3) : .clear, lineWidth: 1)
+                                    )
+                            }
+                            .foregroundStyle(localization.currentLanguage == language ? .primary : .secondary)
+                        }
                     }
                     
                     // Secure notice
@@ -78,19 +106,25 @@ struct AuthView: View {
                         TextField(localization.localizedString("auth.email"), text: $email)
                             .textFieldStyle()
                             .textContentType(.emailAddress)
-                            .textInputAutocapitalization(.never)
-                            .keyboardType(.emailAddress)
-                        
-                        SecureField(localization.localizedString("auth.password"), text: $password)
-                            .textFieldStyle()
-                            .textContentType(isSignUp ? .newPassword : .password)
-                        
-                        if let error = authManager.error {
-                            Text(error)
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
+                           .textInputAutocapitalization(.never)
+                           .keyboardType(.emailAddress)
+                           .autocorrectionDisabled(true)
+                       
+                       SecureField(localization.localizedString("auth.password"), text: $password)
+                           .textFieldStyle()
+                           .textContentType(isSignUp ? .newPassword : .password)
+                       
+                       if let error = authManager.error {
+                           let lowerError = error.lowercased()
+                           let localizedError = lowerError.contains("invalid login credentials") 
+                               ? localization.localizedString("auth.error.invalid_credentials") 
+                               : (lowerError.contains("network") ? localization.localizedString("auth.error.network") : error)
+                           
+                           Text(localizedError)
+                               .font(.caption)
+                               .foregroundStyle(.red)
+                               .frame(maxWidth: .infinity, alignment: .leading)
+                       }
                         
                         Button(action: authenticate) {
                             if authManager.isLoading {

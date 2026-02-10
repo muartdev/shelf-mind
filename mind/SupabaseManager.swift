@@ -73,7 +73,9 @@ final class SupabaseManager {
             avatarURL: response.avatar_url,
             createdAt: response.created_at,
             isPremium: response.is_premium ?? false,
-            premiumUntil: response.premium_until
+            premiumUntil: response.premium_until,
+            premiumPurchaseDate: response.premium_purchase_date,
+            languageCode: response.language_code ?? "en"
         )
         
         return user
@@ -107,7 +109,9 @@ final class SupabaseManager {
             avatarURL: response.avatar_url,
             createdAt: response.created_at,
             isPremium: response.is_premium ?? false,
-            premiumUntil: response.premium_until
+            premiumUntil: response.premium_until,
+            premiumPurchaseDate: response.premium_purchase_date,
+            languageCode: response.language_code ?? "en"
         )
         
         return user
@@ -187,10 +191,21 @@ final class SupabaseManager {
     struct PremiumUpdate: Encodable {
         let is_premium: Bool
         let premium_until: Date?
+        let premium_purchase_date: Date?
+        let language_code: String?
     }
     
-    func updateUserPremiumStatus(userId: UUID, isPremium: Bool, expirationDate: Date?) async throws {
-        let update = PremiumUpdate(is_premium: isPremium, premium_until: expirationDate)
+    func updateUserProfile(userId: UUID, isPremium: Bool? = nil, expirationDate: Date? = nil, purchaseDate: Date? = nil, languageCode: String? = nil) async throws {
+        let update = PremiumUpdate(
+            is_premium: isPremium ?? false, // Defaulting to current if possible, but schema allows nulls
+            premium_until: expirationDate,
+            premium_purchase_date: purchaseDate,
+            language_code: languageCode
+        )
+        
+        // Since we want to support partial updates, we might need a more flexible approach if Supabase Encodable doesn't skip nil.
+        // For now, following existing pattern.
+        
         try await client.from("users")
             .update(update)
             .eq("id", value: userId.uuidString)
@@ -208,6 +223,8 @@ struct UserProfile: Codable {
     let created_at: Date
     let is_premium: Bool?
     let premium_until: Date?
+    let premium_purchase_date: Date?
+    let language_code: String?
 }
 
 struct BookmarkDTO: Codable {
