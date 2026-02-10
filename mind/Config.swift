@@ -9,21 +9,31 @@
 import Foundation
 
 enum Config {
-    // TEMPORARY: Hardcoded credentials for debugging
-    // TODO: Fix xcconfig integration later
+    private static func sanitized(_ value: String) -> String {
+        value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+    }
     
     static let supabaseURL: URL = {
-        let urlString = "https://bhrukmualirlkapcdiso.supabase.co"
-        guard let url = URL(string: urlString) else {
-            fatalError("Invalid Supabase URL: \(urlString)")
+        guard let raw = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String else {
+            fatalError("SUPABASE_URL not found in Info.plist")
         }
-        print("✅ CONFIG: Using URL: \(urlString)")
+        let urlString = sanitized(raw)
+        guard let url = URL(string: urlString), let host = url.host, !host.isEmpty else {
+            fatalError("Invalid SUPABASE_URL. Ensure Config.xcconfig has full https://... (wrap in quotes if needed).")
+        }
         return url
     }()
     
     static let supabaseAnonKey: String = {
-        let key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJocnVrbXVhbGlybGthcGNkaXNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1Njk1MTAsImV4cCI6MjA4NjE0NTUxMH0.oOniwkM8mCcPCP8chrTxeTdNBMVqqbnoQtTbnuEMO3I"
-        print("✅ CONFIG: Using key: \(key.prefix(20))...")
+        guard let raw = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_ANON_KEY") as? String else {
+            fatalError("SUPABASE_ANON_KEY not found in Info.plist")
+        }
+        let key = sanitized(raw)
+        guard !key.isEmpty else {
+            fatalError("SUPABASE_ANON_KEY not found in Info.plist")
+        }
         return key
     }()
 }

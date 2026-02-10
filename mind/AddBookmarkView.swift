@@ -31,6 +31,7 @@ struct AddBookmarkView: View {
     @State private var previewTitle: String?
     @State private var previewImage: String?
     @State private var thumbnailURL: String?
+    @State private var previewTask: Task<Void, Never>?
     
     var body: some View {
         NavigationStack {
@@ -406,12 +407,19 @@ struct AddBookmarkView: View {
             showingValidationError = true
             return
         }
+
+        let normalizedURL = Bookmark.normalizedURLString(url)
+        if bookmarks.contains(where: { Bookmark.normalizedURLString($0.url) == normalizedURL }) {
+            validationMessage = localization.localizedString("add.error.duplicate")
+            showingValidationError = true
+            return
+        }
         
         let bookmark = Bookmark(
             title: title,
             url: url,
             notes: notes,
-            category: selectedCategory.rawValue.lowercased(),
+            category: selectedCategory.storageKey,
             dateAdded: Date(),
             isRead: false,
             thumbnailURL: thumbnailURL,
@@ -436,7 +444,7 @@ struct AddBookmarkView: View {
                 print("✅ Bookmark saved to Supabase")
             } catch {
                 print("❌ Failed to save bookmark to Supabase: \(error)")
-                // Still saved locally, so we can continue
+                // Still saved locally; queued for sync if possible
             }
         }
         
@@ -446,18 +454,27 @@ struct AddBookmarkView: View {
     // MARK: - URL Preview
     
     private func loadURLPreview(for urlString: String) {
+        previewTask?.cancel()
         // Debounce - wait a bit for user to finish typing
-        Task {
+        previewTask = Task {
             try? await Task.sleep(for: .seconds(0.5))
             
+            guard !Task.isCancelled else { return }
             guard self.url == urlString else { return } // User changed URL
             
-            isLoadingPreview = true
-            defer { isLoadingPreview = false }
+            await MainActor.run {
+                isLoadingPreview = true
+            }
+            defer {
+                Task { @MainActor in
+                    isLoadingPreview = false
+                }
+            }
             
             do {
                 let preview = try await URLPreviewManager.shared.fetchPreview(for: urlString)
                 
+                guard !Task.isCancelled else { return }
                 await MainActor.run {
                     self.previewTitle = preview.title
                     self.previewImage = preview.imageURL

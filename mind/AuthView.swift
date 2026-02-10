@@ -15,12 +15,13 @@ struct AuthView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var name = ""
+    @State private var verificationCode = ""
     
     var body: some View {
         ZStack {
             // Background - themed
             LinearGradient(
-                colors: themeManager.currentTheme.gradientColors.map { $0.opacity(3) },
+                colors: themeManager.currentTheme.gradientColors.map { $0.opacity(0.3) },
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -36,8 +37,8 @@ struct AuthView: View {
                         Image("mindshelf_logo")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 120, height: 120)
-                            .shadow(color: themeManager.currentTheme.primaryColor.opacity(0.3), radius: 20, x: 0, y: 10)
+                            .frame(width: 96, height: 96)
+                            .shadow(color: themeManager.currentTheme.primaryColor.opacity(0.2), radius: 12, x: 0, y: 6)
                         
                         Text("MindShelf")
                             .font(.largeTitle)
@@ -113,6 +114,42 @@ struct AuthView: View {
                        SecureField(localization.localizedString("auth.password"), text: $password)
                            .textFieldStyle()
                            .textContentType(isSignUp ? .newPassword : .password)
+
+                       if authManager.needsEmailConfirmation {
+                           VStack(alignment: .leading, spacing: 8) {
+                               Text(localization.localizedString("auth.verify.title"))
+                                   .font(.caption)
+                                   .foregroundStyle(.secondary)
+                               Text(localization.localizedString("auth.verify.message"))
+                                   .font(.caption)
+                                   .foregroundStyle(.secondary)
+                               if let pendingEmail = authManager.pendingEmail {
+                                   Text(pendingEmail)
+                                       .font(.caption2)
+                                       .foregroundStyle(.secondary)
+                               }
+                               TextField(localization.localizedString("auth.verify.code.placeholder"), text: $verificationCode)
+                                   .textFieldStyle()
+                                   .keyboardType(.numberPad)
+                                   .textInputAutocapitalization(.never)
+                               Button(localization.localizedString("auth.verify.button")) {
+                                   Task { await authManager.verifyEmailOTP(code: verificationCode) }
+                               }
+                               .font(.caption)
+                               Button(localization.localizedString("auth.verify.resend")) {
+                                   Task { await authManager.resendConfirmation() }
+                               }
+                               .font(.caption)
+                           }
+                           .frame(maxWidth: .infinity, alignment: .leading)
+                       }
+
+                       if let infoKey = authManager.infoKey {
+                           Text(localization.localizedString(infoKey))
+                               .font(.caption)
+                               .foregroundStyle(.green)
+                               .frame(maxWidth: .infinity, alignment: .leading)
+                       }
                        
                        if let error = authManager.error {
                            Text(getLocalizedError(error))
@@ -158,6 +195,9 @@ struct AuthView: View {
     private func getLocalizedError(_ error: String) -> String {
         let lowerError = error.lowercased()
         
+        if error == "auth.error.profile_missing" {
+            return localization.localizedString("auth.error.profile_missing")
+        }
         if lowerError.contains("invalid login credentials") {
             return localization.localizedString("auth.error.invalid_credentials")
         } else if lowerError.contains("missing email or phone") {
@@ -166,12 +206,17 @@ struct AuthView: View {
             return localization.localizedString("auth.error.password_too_short")
         } else if lowerError.contains("already registered") {
             return localization.localizedString("auth.error.already_registered")
+        } else if lowerError.contains("email not confirmed") || lowerError.contains("confirm your email") {
+            return localization.localizedString("auth.error.email_not_confirmed")
+        } else if lowerError.contains("invalid") && lowerError.contains("otp") {
+            return localization.localizedString("auth.error.invalid_code")
         } else if lowerError.contains("network") {
             return localization.localizedString("auth.error.network")
         } else {
             return error
         }
     }
+
 
     
     private func authenticate() {

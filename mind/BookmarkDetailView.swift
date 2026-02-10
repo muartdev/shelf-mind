@@ -31,7 +31,7 @@ struct BookmarkDetailView: View {
         _editedTitle = State(initialValue: bookmark.title)
         _editedURL = State(initialValue: bookmark.url)
         _editedNotes = State(initialValue: bookmark.notes)
-        _editedCategory = State(initialValue: Category.allCases.first(where: { $0.rawValue.lowercased() == bookmark.category }) ?? .general)
+        _editedCategory = State(initialValue: Category.fromStoredValue(bookmark.category) ?? .general)
     }
     
     var body: some View {
@@ -314,7 +314,7 @@ struct BookmarkDetailView: View {
     
     private var categoryBadge: some View {
         HStack(spacing: 6) {
-            if let category = Category.allCases.first(where: { $0.rawValue.lowercased() == bookmark.category }) {
+            if let category = Category.fromStoredValue(bookmark.category) {
                 Image(systemName: category.icon)
                 Text(category.rawValue)
                     .font(.caption)
@@ -369,7 +369,9 @@ struct BookmarkDetailView: View {
     private func toggleRead() {
         withAnimation(.smooth) {
             bookmark.isRead.toggle()
-            dismiss()
+            Task {
+                try? await SupabaseManager.shared.updateBookmark(bookmark)
+            }
         }
     }
     
@@ -413,7 +415,11 @@ struct BookmarkDetailView: View {
         bookmark.title = editedTitle
         bookmark.url = editedURL
         bookmark.notes = editedNotes
-        bookmark.category = editedCategory.rawValue.lowercased()
+        bookmark.category = editedCategory.storageKey
+
+        Task {
+            try? await SupabaseManager.shared.updateBookmark(bookmark)
+        }
         
         withAnimation(.smooth) {
             isEditing = false
@@ -424,7 +430,7 @@ struct BookmarkDetailView: View {
         editedTitle = bookmark.title
         editedURL = bookmark.url
         editedNotes = bookmark.notes
-        editedCategory = Category.allCases.first(where: { $0.rawValue.lowercased() == bookmark.category }) ?? .general
+        editedCategory = Category.fromStoredValue(bookmark.category) ?? .general
         
         withAnimation(.smooth) {
             isEditing = false
@@ -433,6 +439,9 @@ struct BookmarkDetailView: View {
     
     private func deleteBookmark() {
         modelContext.delete(bookmark)
+        Task {
+            try? await SupabaseManager.shared.deleteBookmark(id: bookmark.id)
+        }
         dismiss()
     }
 }

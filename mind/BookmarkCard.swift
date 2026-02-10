@@ -32,7 +32,7 @@ struct BookmarkCard: View {
                 fullLayout
             }
         }
-        .padding(isCompact ? 12 : 16)
+        .padding(isCompact ? 0 : 16)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
     
@@ -120,23 +120,42 @@ struct BookmarkCard: View {
     // MARK: - Compact Layout (Grid View)
     
     private var compactLayout: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(spacing: 0) {
+            compactImageSection
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text(bookmark.title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 40, alignment: .topLeading)
+                
+                HStack {
+                    categoryBadge
+                    Spacer()
+                    readStatusButton
+                }
+            }
+            .padding(12)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 220)
+    }
+
+    private var compactImageSection: some View {
+        Group {
             if let thumbnailURL = bookmark.thumbnailURL, !thumbnailURL.isEmpty {
-                // Full width image layout
                 AsyncImage(url: URL(string: thumbnailURL)) { phase in
                     switch phase {
                     case .success(let image):
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(height: 120)
-                            .frame(maxWidth: .infinity)
-                            .clipped()
                     case .failure(_), .empty:
-                        // Show placeholder ONLY, not full fallback content
                         Rectangle()
                             .fill(Color.gray.opacity(0.1))
-                            .frame(height: 120)
                             .overlay(
                                 Image(systemName: "photo")
                                     .font(.largeTitle)
@@ -145,33 +164,18 @@ struct BookmarkCard: View {
                     @unknown default:
                         Rectangle()
                             .fill(Color.gray.opacity(0.1))
-                            .frame(height: 120)
                     }
                 }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(bookmark.title)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .frame(height: 40, alignment: .topLeading) // Fixed text height
-                    
-                    HStack {
-                        categoryBadge
-                        Spacer()
-                        readStatusButton
-                    }
-                }
-                .padding(12)
             } else {
-                // Original layout for no image
-                fallbackCompactContent
-                    .padding(10)
+                ZStack {
+                    Color.gray.opacity(0.05)
+                    thumbnailView(size: 70)
+                }
             }
         }
-        .frame(height: 220) // Fixed total height
+        .frame(height: 120)
+        .frame(maxWidth: .infinity)
+        .clipped()
     }
     
     private var fallbackCompactContent: some View {
@@ -293,7 +297,7 @@ struct BookmarkCard: View {
     
     private var categoryBadge: some View {
         HStack(spacing: 4) {
-            if let category = Category.allCases.first(where: { $0.rawValue.lowercased() == bookmark.category }) {
+            if let category = Category.fromStoredValue(bookmark.category) {
                 Image(systemName: category.icon)
                     .font(.caption)
                     .foregroundStyle(category.color)
@@ -333,6 +337,9 @@ struct BookmarkCard: View {
         withAnimation(.smooth) {
             bookmark.isRead.toggle()
         }
+        Task {
+            try? await SupabaseManager.shared.updateBookmark(bookmark)
+        }
     }
     
     private func openURL() {
@@ -346,6 +353,9 @@ struct BookmarkCard: View {
     private func deleteBookmark() {
         withAnimation(.smooth) {
             modelContext.delete(bookmark)
+        }
+        Task {
+            try? await SupabaseManager.shared.deleteBookmark(id: bookmark.id)
         }
     }
 }
@@ -363,6 +373,7 @@ extension View {
             RoundedRectangle(cornerRadius: 20)
                 .strokeBorder(.white.opacity(0.2), lineWidth: 1)
         )
+        .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 8)
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }

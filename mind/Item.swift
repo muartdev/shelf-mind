@@ -45,6 +45,50 @@ final class Bookmark {
     }
 }
 
+extension Bookmark {
+    static func normalizedURLString(_ urlString: String) -> String {
+        let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard var components = URLComponents(string: trimmed) else {
+            return trimmed.lowercased()
+        }
+        
+        components.fragment = nil
+        if let scheme = components.scheme?.lowercased() {
+            components.scheme = scheme
+        }
+        if let host = components.host?.lowercased() {
+            var normalizedHost = host
+            if normalizedHost.hasPrefix("www.") {
+                normalizedHost.removeFirst(4)
+            }
+            components.host = normalizedHost
+        }
+        if let port = components.port {
+            if (components.scheme == "http" && port == 80) || (components.scheme == "https" && port == 443) {
+                components.port = nil
+            }
+        }
+        
+        var path = components.path
+        if path.count > 1, path.hasSuffix("/") {
+            path.removeLast()
+            components.path = path
+        }
+        
+        if var items = components.queryItems {
+            let trackingParams: Set<String> = [
+                "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+                "fbclid", "gclid", "igshid"
+            ]
+            items = items.filter { !trackingParams.contains($0.name.lowercased()) }
+            items.sort { ($0.name, $0.value ?? "") < ($1.name, $1.value ?? "") }
+            components.queryItems = items.isEmpty ? nil : items
+        }
+        
+        return components.string ?? trimmed.lowercased()
+    }
+}
+
 /// Categories for organizing bookmarks
 enum Category: String, CaseIterable, Identifiable {
     case twitter = "X (Twitter)"
@@ -55,6 +99,27 @@ enum Category: String, CaseIterable, Identifiable {
     case general = "General"
     
     var id: String { rawValue }
+
+    /// Stable storage key used in persistence and sync.
+    var storageKey: String {
+        switch self {
+        case .twitter: return "x"
+        case .instagram: return "instagram"
+        case .youtube: return "youtube"
+        case .article: return "article"
+        case .video: return "video"
+        case .general: return "general"
+        }
+    }
+
+    /// Map a stored value to a category, accepting legacy values.
+    static func fromStoredValue(_ value: String) -> Category? {
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if let match = allCases.first(where: { $0.storageKey == normalized }) {
+            return match
+        }
+        return allCases.first(where: { $0.rawValue.lowercased() == normalized })
+    }
     
     var shortName: String {
         switch self {

@@ -15,6 +15,9 @@ final class AuthManager {
     var currentUser: User?
     var isLoading = false
     var error: String?
+    var needsEmailConfirmation = false
+    var pendingEmail: String?
+    var infoKey: String?
     
     private let supabase = SupabaseManager.shared
     
@@ -35,6 +38,8 @@ final class AuthManager {
     func signIn(email: String, password: String) async {
         isLoading = true
         error = nil
+        infoKey = nil
+        needsEmailConfirmation = false
         
         do {
             let user = try await supabase.signIn(email: email, password: password)
@@ -53,8 +58,20 @@ final class AuthManager {
             if let language = LocalizationManager.AppLanguage.allCases.first(where: { $0.code == user.languageCode }) {
                 LocalizationManager.shared.currentLanguage = language
             }
+            
+            await SupabaseManager.shared.syncPendingOperations()
         } catch {
-            self.error = error.localizedDescription
+            let message = error.localizedDescription
+            if error is SupabaseManager.ProfileError {
+                self.error = "auth.error.profile_missing"
+                isLoading = false
+                return
+            }
+            if message.lowercased().contains("email not confirmed") {
+                needsEmailConfirmation = true
+                pendingEmail = email
+            }
+            self.error = message
         }
         
         isLoading = false
@@ -63,19 +80,32 @@ final class AuthManager {
     func signUp(email: String, name: String, password: String) async {
         isLoading = true
         error = nil
+        infoKey = nil
+        needsEmailConfirmation = false
         
         do {
-            let user = try await supabase.signUp(email: email, password: password, name: name)
-            currentUser = user
+            let result = try await supabase.signUp(email: email, password: password, name: name)
+            currentUser = result.user
+            pendingEmail = email
+            
+            if result.session == nil {
+                isAuthenticated = false
+                needsEmailConfirmation = true
+                infoKey = "auth.verify.sent"
+                return
+            }
+            
             isAuthenticated = true
-            saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
+            saveSession(userId: result.user.id.uuidString, email: result.user.email, name: result.user.name)
             
             // New user is free by default, but update anyway
             PaywallManager.shared.setPremiumFromDatabase(
-                isPremium: user.isPremium,
-                expirationDate: user.premiumUntil,
-                purchaseDate: user.premiumPurchaseDate
+                isPremium: result.user.isPremium,
+                expirationDate: result.user.premiumUntil,
+                purchaseDate: result.user.premiumPurchaseDate
             )
+            
+            await SupabaseManager.shared.syncPendingOperations()
         } catch {
             self.error = error.localizedDescription
         }
@@ -90,6 +120,9 @@ final class AuthManager {
         
         currentUser = nil
         isAuthenticated = false
+        needsEmailConfirmation = false
+        pendingEmail = nil
+        infoKey = nil
         clearSession()
     }
     
@@ -120,6 +153,9 @@ final class AuthManager {
             if let user = try await supabase.getCurrentUser() {
                 currentUser = user
                 isAuthenticated = true
+                needsEmailConfirmation = false
+                pendingEmail = nil
+                infoKey = nil
                 
                 // Sync premium status from DB
                 PaywallManager.shared.setPremiumFromDatabase(
@@ -132,6 +168,8 @@ final class AuthManager {
                 if let language = LocalizationManager.AppLanguage.allCases.first(where: { $0.code == user.languageCode }) {
                     LocalizationManager.shared.currentLanguage = language
                 }
+                
+                await SupabaseManager.shared.syncPendingOperations()
             } else {
                 clearSession()
             }
@@ -154,5 +192,56 @@ final class AuthManager {
         UserDefaults.standard.removeObject(forKey: "userId")
         UserDefaults.standard.removeObject(forKey: "userEmail")
         UserDefaults.standard.removeObject(forKey: "userName")
+    }
+
+    func resendConfirmation() async {
+        guard let email = pendingEmail else { return }
+        isLoading = true
+        error = nil
+        infoKey = nil
+        do {
+            try await supabase.resendSignupConfirmation(email: email)
+            infoKey = "auth.verify.sent"
+        } catch {
+            self.error = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    func verifyEmailOTP(code: String) async {
+        guard let email = pendingEmail else { return }
+        isLoading = true
+        error = nil
+        infoKey = nil
+        
+        do {
+            try await supabase.verifyEmailOTP(email: email, token: code)
+            if let user = try await supabase.getCurrentUser() {
+                currentUser = user
+                isAuthenticated = true
+                needsEmailConfirmation = false
+                pendingEmail = nil
+                saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
+                
+                PaywallManager.shared.setPremiumFromDatabase(
+                    isPremium: user.isPremium,
+                    expirationDate: user.premiumUntil,
+                    purchaseDate: user.premiumPurchaseDate
+                )
+                
+                if let language = LocalizationManager.AppLanguage.allCases.first(where: { $0.code == user.languageCode }) {
+                    LocalizationManager.shared.currentLanguage = language
+                }
+                
+                infoKey = "auth.verify.success"
+                await SupabaseManager.shared.syncPendingOperations()
+            } else {
+                self.error = "Unable to fetch user after verification."
+            }
+        } catch {
+            self.error = error.localizedDescription
+        }
+        
+        isLoading = false
     }
 }

@@ -417,7 +417,7 @@ struct CategoryChip: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            if let category = Category.allCases.first(where: { $0.rawValue.lowercased() == stat.name }) {
+            if let category = Category.fromStoredValue(stat.name) {
                 // Icon with category color
                 Circle()
                     .fill(category.color.gradient)
@@ -510,7 +510,7 @@ struct CategoryRow: View {
     
     var body: some View {
         HStack {
-            if let category = Category.allCases.first(where: { $0.rawValue.lowercased() == stat.name }) {
+            if let category = Category.fromStoredValue(stat.name) {
                 Image(systemName: category.icon)
                     .foregroundStyle(category.color)
                 Text(category.rawValue)

@@ -62,22 +62,12 @@ struct OnboardingView: View {
                 
                 // Page content
                 VStack(spacing: 30) {
-                    if currentPage == 0 {
-                        Image("mindshelf_logo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 140, height: 140)
-                            .shadow(color: pages[currentPage].color.opacity(0.3), radius: 20, x: 0, y: 10)
-                            .transition(.scale.combined(with: .opacity))
-                            .id("logo-\(currentPage)")
-                    } else {
-                        Image(systemName: pages[currentPage].icon)
-                            .font(.system(size: 80))
-                            .foregroundStyle(pages[currentPage].color)
-                            .shadow(color: pages[currentPage].color.opacity(0.3), radius: 20, x: 0, y: 10)
-                            .transition(.scale.combined(with: .opacity))
-                            .id("icon-\(currentPage)")
-                    }
+                    Image(systemName: pages[currentPage].icon)
+                        .font(.system(size: 80))
+                        .foregroundStyle(pages[currentPage].color)
+                        .shadow(color: pages[currentPage].color.opacity(0.3), radius: 20, x: 0, y: 10)
+                        .transition(.scale.combined(with: .opacity))
+                        .id("icon-\(currentPage)")
                     
                     VStack(spacing: 16) {
                         Text(pages[currentPage].title)

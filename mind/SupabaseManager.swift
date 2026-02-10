@@ -15,13 +15,10 @@ final class SupabaseManager {
     static let shared = SupabaseManager()
     
     let client: SupabaseClient
+    private let pendingOpsKey = "pendingBookmarkOps"
     
     private init() {
         // Initialize Supabase client with config
-        print("🔍 DEBUG: supabaseURL = \(Config.supabaseURL)")
-        print("🔍 DEBUG: supabaseURL.host = \(Config.supabaseURL.host ?? "nil")")
-        print("🔍 DEBUG: supabaseKey = \(Config.supabaseAnonKey.prefix(20))...")
-        
         self.client = SupabaseClient(
             supabaseURL: Config.supabaseURL,
             supabaseKey: Config.supabaseAnonKey,
@@ -34,8 +31,17 @@ final class SupabaseManager {
     }
     
     // MARK: - Authentication
+
+    enum ProfileError: Error {
+        case missing
+    }
     
-    func signUp(email: String, password: String, name: String) async throws -> User {
+    struct SignUpResult {
+        let user: User
+        let session: Session?
+    }
+    
+    func signUp(email: String, password: String, name: String) async throws -> SignUpResult {
         let authResponse = try await client.auth.signUp(
             email: email,
             password: password,
@@ -49,7 +55,7 @@ final class SupabaseManager {
             name: name
         )
         
-        return user
+        return SignUpResult(user: user, session: authResponse.session)
     }
     
     func signIn(email: String, password: String) async throws -> User {
@@ -59,12 +65,11 @@ final class SupabaseManager {
         )
         
         // Fetch user profile
-        let response: UserProfile = try await client.from("users")
-            .select()
-            .eq("id", value: authResponse.user.id.uuidString)
-            .single()
-            .execute()
-            .value
+        let response = try await fetchOrCreateUserProfile(
+            userId: authResponse.user.id,
+            email: authResponse.user.email ?? email,
+            fallbackName: authResponse.user.email?.split(separator: "@").first.map(String.init) ?? "User"
+        )
         
         let user = User(
             id: response.id,
@@ -84,6 +89,18 @@ final class SupabaseManager {
     func signOut() async throws {
         try await client.auth.signOut()
     }
+
+    func resendSignupConfirmation(email: String) async throws {
+        try await client.auth.resend(email: email, type: .signup)
+    }
+
+    func verifyEmailOTP(email: String, token: String) async throws {
+        try await client.auth.verifyOTP(
+            email: email,
+            token: token,
+            type: .signup
+        )
+    }
     
     func getCurrentUser() async throws -> User? {
         // Try to get current session
@@ -95,12 +112,12 @@ final class SupabaseManager {
             return nil
         }
         
-        let response: UserProfile = try await client.from("users")
-            .select()
-            .eq("id", value: session.user.id.uuidString)
-            .single()
-            .execute()
-            .value
+        let email = session.user.email ?? ""
+        let response = try await fetchOrCreateUserProfile(
+            userId: session.user.id,
+            email: email,
+            fallbackName: email.split(separator: "@").first.map(String.init) ?? "User"
+        )
         
         let user = User(
             id: response.id,
@@ -115,6 +132,53 @@ final class SupabaseManager {
         )
         
         return user
+    }
+
+    private func fetchOrCreateUserProfile(userId: UUID, email: String, fallbackName: String) async throws -> UserProfile {
+        let profiles: [UserProfile] = try await client.from("users")
+            .select()
+            .eq("id", value: userId.uuidString)
+            .limit(1)
+            .execute()
+            .value
+        
+        if let profile = profiles.first {
+            return profile
+        }
+        
+        // Try to create profile if missing (requires insert policy)
+        struct UserProfileInsert: Encodable {
+            let id: UUID
+            let email: String
+            let name: String
+        }
+        
+        let insert = UserProfileInsert(
+            id: userId,
+            email: email,
+            name: fallbackName
+        )
+        
+        do {
+            try await client.from("users")
+                .insert(insert)
+                .execute()
+        } catch {
+            throw ProfileError.missing
+        }
+        
+        let retry: [UserProfile] = try await client.from("users")
+            .select()
+            .eq("id", value: userId.uuidString)
+            .limit(1)
+            .execute()
+            .value
+        
+        if let profile = retry.first {
+            return profile
+        }
+        
+        throw ProfileError.missing
     }
     
     // MARK: - Bookmarks
@@ -143,9 +207,19 @@ final class SupabaseManager {
             thumbnail_url: bookmark.thumbnailURL
         )
         
-        try await client.from("bookmarks")
-            .insert(dto)
-            .execute()
+        guard (try? await client.auth.session) != nil else {
+            enqueuePendingOperation(.init(type: .create, bookmark: dto))
+            return
+        }
+        
+        do {
+            try await client.from("bookmarks")
+                .insert(dto)
+                .execute()
+        } catch {
+            enqueuePendingOperation(.init(type: .create, bookmark: dto))
+            throw error
+        }
     }
     
     func updateBookmark(_ bookmark: Bookmark) async throws {
@@ -161,17 +235,37 @@ final class SupabaseManager {
             thumbnail_url: bookmark.thumbnailURL
         )
         
-        try await client.from("bookmarks")
-            .update(dto)
-            .eq("id", value: bookmark.id.uuidString)
-            .execute()
+        guard (try? await client.auth.session) != nil else {
+            enqueuePendingOperation(.init(type: .update, bookmark: dto))
+            return
+        }
+        
+        do {
+            try await client.from("bookmarks")
+                .update(dto)
+                .eq("id", value: bookmark.id.uuidString)
+                .execute()
+        } catch {
+            enqueuePendingOperation(.init(type: .update, bookmark: dto))
+            throw error
+        }
     }
     
     func deleteBookmark(id: UUID) async throws {
-        try await client.from("bookmarks")
-            .delete()
-            .eq("id", value: id.uuidString)
-            .execute()
+        guard (try? await client.auth.session) != nil else {
+            enqueuePendingOperation(.init(type: .delete, bookmark: nil, id: id))
+            return
+        }
+        
+        do {
+            try await client.from("bookmarks")
+                .delete()
+                .eq("id", value: id.uuidString)
+                .execute()
+        } catch {
+            enqueuePendingOperation(.init(type: .delete, bookmark: nil, id: id))
+            throw error
+        }
     }
     
     // MARK: - Account Management
@@ -189,15 +283,38 @@ final class SupabaseManager {
     }
     
     struct PremiumUpdate: Encodable {
-        let is_premium: Bool
+        let is_premium: Bool?
         let premium_until: Date?
         let premium_purchase_date: Date?
         let language_code: String?
+
+        enum CodingKeys: String, CodingKey {
+            case is_premium
+            case premium_until
+            case premium_purchase_date
+            case language_code
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            if let is_premium {
+                try container.encode(is_premium, forKey: .is_premium)
+            }
+            if let premium_until {
+                try container.encode(premium_until, forKey: .premium_until)
+            }
+            if let premium_purchase_date {
+                try container.encode(premium_purchase_date, forKey: .premium_purchase_date)
+            }
+            if let language_code {
+                try container.encode(language_code, forKey: .language_code)
+            }
+        }
     }
     
     func updateUserProfile(userId: UUID, isPremium: Bool? = nil, expirationDate: Date? = nil, purchaseDate: Date? = nil, languageCode: String? = nil) async throws {
         let update = PremiumUpdate(
-            is_premium: isPremium ?? false, // Defaulting to current if possible, but schema allows nulls
+            is_premium: isPremium,
             premium_until: expirationDate,
             premium_purchase_date: purchaseDate,
             language_code: languageCode
@@ -210,6 +327,76 @@ final class SupabaseManager {
             .update(update)
             .eq("id", value: userId.uuidString)
             .execute()
+    }
+
+    // MARK: - Pending Operations (Offline Queue)
+    
+    func syncPendingOperations() async {
+        guard let session = try? await client.auth.session else { return }
+        
+        let pending = loadPendingOperations()
+        guard !pending.isEmpty else { return }
+        
+        var remaining: [PendingBookmarkOperation] = []
+        
+        for op in pending {
+            do {
+                switch op.type {
+                case .create:
+                    guard var dto = op.bookmark else { continue }
+                    if dto.user_id == nil {
+                        dto.user_id = session.user.id
+                    }
+                    try await client.from("bookmarks")
+                        .insert(dto)
+                        .execute()
+                    
+                case .update:
+                    guard let dto = op.bookmark else { continue }
+                    try await client.from("bookmarks")
+                        .update(dto)
+                        .eq("id", value: dto.id.uuidString)
+                        .execute()
+                    
+                case .delete:
+                    try await client.from("bookmarks")
+                        .delete()
+                        .eq("id", value: op.id.uuidString)
+                        .execute()
+                }
+            } catch {
+                remaining.append(op)
+            }
+        }
+        
+        savePendingOperations(remaining)
+    }
+    
+    private func enqueuePendingOperation(_ op: PendingBookmarkOperation) {
+        var ops = loadPendingOperations()
+        
+        switch op.type {
+        case .delete:
+            ops.removeAll { $0.id == op.id }
+            ops.append(op)
+        case .update:
+            ops.removeAll { $0.id == op.id && $0.type == .update }
+            ops.append(op)
+        case .create:
+            ops.append(op)
+        }
+        
+        savePendingOperations(ops)
+    }
+    
+    private func loadPendingOperations() -> [PendingBookmarkOperation] {
+        guard let data = UserDefaults.standard.data(forKey: pendingOpsKey) else { return [] }
+        return (try? JSONDecoder().decode([PendingBookmarkOperation].self, from: data)) ?? []
+    }
+    
+    private func savePendingOperations(_ ops: [PendingBookmarkOperation]) {
+        let data = try? JSONEncoder().encode(ops)
+        UserDefaults.standard.set(data, forKey: pendingOpsKey)
     }
 }
 
@@ -228,17 +415,17 @@ struct UserProfile: Codable {
 }
 
 struct BookmarkDTO: Codable {
-    let id: UUID
-    let user_id: UUID?
-    let title: String
-    let url: String
-    let notes: String
-    let category: String
-    let tags: [String]
-    let is_read: Bool
-    let thumbnail_url: String?
-    let created_at: Date?
-    let updated_at: Date?
+    var id: UUID
+    var user_id: UUID?
+    var title: String
+    var url: String
+    var notes: String
+    var category: String
+    var tags: [String]
+    var is_read: Bool
+    var thumbnail_url: String?
+    var created_at: Date?
+    var updated_at: Date?
     
     init(id: UUID, user_id: UUID?, title: String, url: String, notes: String, category: String, tags: [String], is_read: Bool, thumbnail_url: String?, created_at: Date? = nil, updated_at: Date? = nil) {
         self.id = id
@@ -252,5 +439,25 @@ struct BookmarkDTO: Codable {
         self.thumbnail_url = thumbnail_url
         self.created_at = created_at
         self.updated_at = updated_at
+    }
+}
+
+struct PendingBookmarkOperation: Codable {
+    enum OperationType: String, Codable {
+        case create
+        case update
+        case delete
+    }
+    
+    let id: UUID
+    let type: OperationType
+    let bookmark: BookmarkDTO?
+    let timestamp: Date
+    
+    init(type: OperationType, bookmark: BookmarkDTO?, id: UUID? = nil) {
+        self.type = type
+        self.bookmark = bookmark
+        self.id = id ?? bookmark?.id ?? UUID()
+        self.timestamp = Date()
     }
 }

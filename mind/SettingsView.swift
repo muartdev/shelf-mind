@@ -491,6 +491,7 @@ struct SettingsView: View {
         for bookmark in bookmarks {
             modelContext.delete(bookmark)
         }
+        try? modelContext.save()
     }
     
     private func deleteAccount() {

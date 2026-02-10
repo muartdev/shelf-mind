@@ -30,6 +30,9 @@ CREATE POLICY "Users can view own data" ON public.users
 CREATE POLICY "Users can update own data" ON public.users
     FOR UPDATE USING (auth.uid() = id);
 
+CREATE POLICY "Users can insert own data" ON public.users
+    FOR INSERT WITH CHECK (auth.uid() = id);
+
 -- Bookmarks table
 CREATE TABLE public.bookmarks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

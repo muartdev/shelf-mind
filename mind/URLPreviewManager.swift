@@ -29,19 +29,29 @@ final class URLPreviewManager {
         }
         
         // Fetch HTML
-        let (data, _) = try await URLSession.shared.data(from: url)
+        var request = URLRequest(url: url)
+        request.setValue(
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+            forHTTPHeaderField: "User-Agent"
+        )
+        request.setValue("text/html,application/xhtml+xml", forHTTPHeaderField: "Accept")
+        let (data, _) = try await URLSession.shared.data(for: request)
         guard let html = String(data: data, encoding: .utf8) else {
             throw URLError(.cannotDecodeContentData)
         }
         
         // Parse Open Graph and Meta tags
-        let title = extractMetaTag(html: html, property: "og:title") 
+        let title = normalizeTitle(
+            extractMetaTag(html: html, property: "og:title")
                     ?? extractMetaTag(html: html, name: "twitter:title")
                     ?? extractTitle(html: html)
+        )
         
-        let description = extractMetaTag(html: html, property: "og:description")
+        let description = normalizeDescription(
+            extractMetaTag(html: html, property: "og:description")
                           ?? extractMetaTag(html: html, name: "twitter:description")
                           ?? extractMetaTag(html: html, name: "description")
+        )
         
         let imageURL = extractMetaTag(html: html, property: "og:image")
                       ?? extractMetaTag(html: html, name: "twitter:image")
@@ -100,6 +110,24 @@ final class URLPreviewManager {
         }
         
         return nsString.substring(with: match.range(at: 1))
+    }
+
+    private func normalizeTitle(_ title: String?) -> String? {
+        guard let title = title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else {
+            return nil
+        }
+        let lower = title.lowercased()
+        if lower.contains("browser is deprecated") || lower.contains("please upgrade") {
+            return nil
+        }
+        return title
+    }
+
+    private func normalizeDescription(_ description: String?) -> String? {
+        guard let description = description?.trimmingCharacters(in: .whitespacesAndNewlines), !description.isEmpty else {
+            return nil
+        }
+        return description
     }
     
     private func extractMetaTag(html: String, property: String? = nil, name: String? = nil) -> String? {

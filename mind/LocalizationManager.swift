@@ -229,8 +229,25 @@ struct LocalizedStrings {
         "auth.error.missing_email": "Missing email or phone number",
         "auth.error.password_too_short": "Password should be at least 6 characters",
         "auth.error.already_registered": "User already registered",
+        "auth.error.email_not_confirmed": "Please verify your email before signing in.",
+        "auth.error.profile_missing": "Account profile not found. Please try again or contact support.",
         "auth.error.network": "Network error. Please check your connection.",
         "auth.error.unknown": "An unknown error occurred",
+        
+        // Email Verification
+        "auth.verify.title": "Verify your email",
+        "auth.verify.message": "We sent a verification link. Please confirm to continue.",
+        "auth.verify.code.placeholder": "Verification code",
+        "auth.verify.button": "Verify code",
+        "auth.verify.resend": "Resend verification email",
+        "auth.verify.sent": "Verification email sent.",
+        "auth.verify.success": "Email verified. You can sign in now.",
+        
+        // OTP Errors
+        "auth.error.invalid_code": "Invalid verification code.",
+        
+        // Add Bookmark Errors
+        "add.error.duplicate": "This URL is already saved.",
         
         // Premium Management
         "settings.premium.manage": "Manage Subscription",
@@ -401,8 +418,25 @@ struct LocalizedStrings {
         "auth.error.missing_email": "E-posta veya telefon numarası eksik",
         "auth.error.password_too_short": "Şifre en az 6 karakter olmalıdır",
         "auth.error.already_registered": "Kullanıcı zaten kayıtlı",
+        "auth.error.email_not_confirmed": "Giriş yapmadan önce e-postanı doğrulamalısın.",
+        "auth.error.profile_missing": "Hesap profili bulunamadı. Lütfen tekrar dene veya destekle iletişime geç.",
         "auth.error.network": "Ağ hatası. Lütfen bağlantınızı kontrol edin.",
         "auth.error.unknown": "Bilinmeyen bir hata oluştu",
+        
+        // Email Verification
+        "auth.verify.title": "E-postanı doğrula",
+        "auth.verify.message": "Doğrulama bağlantısı gönderdik. Devam etmek için onayla.",
+        "auth.verify.code.placeholder": "Doğrulama kodu",
+        "auth.verify.button": "Kodu doğrula",
+        "auth.verify.resend": "Doğrulama e-postasını tekrar gönder",
+        "auth.verify.sent": "Doğrulama e-postası gönderildi.",
+        "auth.verify.success": "E-posta doğrulandı. Giriş yapabilirsin.",
+        
+        // OTP Errors
+        "auth.error.invalid_code": "Doğrulama kodu hatalı.",
+        
+        // Add Bookmark Errors
+        "add.error.duplicate": "Bu URL zaten kaydedilmiş.",
         
         // Premium Management
         "settings.premium.manage": "Aboneliği Yönet",

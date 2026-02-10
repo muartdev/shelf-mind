@@ -179,14 +179,14 @@ struct ContentView: View {
                 )
                 
                 ForEach(Category.allCases) { category in
-                    let count = bookmarks.filter { $0.category == category.rawValue.lowercased() }.count
+                    let count = bookmarks.filter { $0.category == category.storageKey }.count
                     FilterChip(
                         title: category.rawValue,
                         icon: category.icon,
                         count: count > 0 ? count : nil,
-                        isSelected: selectedCategory == category.rawValue.lowercased(),
+                        isSelected: selectedCategory == category.storageKey,
                         action: {
-                            selectedCategory = selectedCategory == category.rawValue.lowercased() ? nil : category.rawValue.lowercased()
+                            selectedCategory = selectedCategory == category.storageKey ? nil : category.storageKey
                         }
                     )
                 }
@@ -329,6 +329,11 @@ struct ContentView: View {
             guard let title = bookmarkData["title"] as? String,
                   let url = bookmarkData["url"] as? String,
                   let category = bookmarkData["category"] as? String else {
+                continue
+            }
+
+            let normalizedURL = Bookmark.normalizedURLString(url)
+            if bookmarks.contains(where: { Bookmark.normalizedURLString($0.url) == normalizedURL }) {
                 continue
             }
             

@@ -335,6 +335,7 @@
 		};
 		FBE5762B2F38BFF00004BFA7 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FBAE2BFB2F390D5A00E60277 /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -398,6 +399,7 @@
 		};
 		FBE5762C2F38BFF00004BFA7 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FBAE2BFB2F390D5A00E60277 /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -478,6 +480,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.muartdev.mind;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPABASE_URL = "https://bhrukmualirlkapcdiso.supabase.co";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -513,6 +516,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.muartdev.mind;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPABASE_URL = "https://bhrukmualirlkapcdiso.supabase.co";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;

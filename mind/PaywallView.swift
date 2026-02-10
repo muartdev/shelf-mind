@@ -63,6 +63,14 @@ struct PaywallView: View {
                     }
                 }
             }
+            .alert("Error", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage ?? "")
+            }
         }
     }
     
@@ -205,44 +213,51 @@ struct PaywallView: View {
     }
     
     private var ctaButton: some View {
-        Button(action: purchasePremium) {
-            HStack {
-                if isPurchasing {
-                    ProgressView()
-                        .tint(.white)
-                } else {
-                    Text(localization.localizedString("paywall.start.premium"))
-                        .font(.headline)
-                        .fontWeight(.bold)
+        VStack(spacing: 8) {
+            Button(action: purchasePremium) {
+                HStack {
+                    if isPurchasing {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text(localization.localizedString("paywall.start.premium"))
+                            .font(.headline)
+                            .fontWeight(.bold)
+                    }
                 }
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(
-                LinearGradient(
-                    colors: [
-                        themeManager.currentTheme.primaryColor,
-                        themeManager.currentTheme.secondaryColor
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(
+                    LinearGradient(
+                        colors: [
+                            themeManager.currentTheme.primaryColor,
+                            themeManager.currentTheme.secondaryColor
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
                 )
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(.white.opacity(0.3), lineWidth: 1)
+                )
+            }
+            .disabled(isPurchasing || selectedProduct == nil)
+            .opacity(isPurchasing || selectedProduct == nil ? 0.5 : 1.0)
+            .shadow(
+                color: themeManager.currentTheme.primaryColor.opacity(0.3),
+                radius: 10,
+                y: 5
             )
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(.white.opacity(0.3), lineWidth: 1)
-            )
+            
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
         }
-        .disabled(isPurchasing || selectedProduct == nil)
-        .opacity(isPurchasing || selectedProduct == nil ? 0.5 : 1.0)
-        .shadow(
-            color: themeManager.currentTheme.primaryColor.opacity(0.3),
-            radius: 10,
-            y: 5
-        )
-
         .onAppear {
             // Default to Yearly if available
             if selectedProductID != .yearly {
@@ -299,6 +314,7 @@ struct PaywallView: View {
                 dismiss()
             } catch {
                 print("❌ Restore failed: \(error)")
+                errorMessage = localization.localizedString("paywall.failed")
             }
         }
     }
