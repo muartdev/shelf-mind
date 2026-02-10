@@ -36,10 +36,12 @@ final class AuthManager {
     }
     
     func signIn(email: String, password: String) async {
+        guard !isLoading else { return }
         isLoading = true
         error = nil
         infoKey = nil
         needsEmailConfirmation = false
+        defer { isLoading = false }
         
         do {
             let user = try await supabase.signIn(email: email, password: password)
@@ -64,7 +66,6 @@ final class AuthManager {
             let message = error.localizedDescription
             if error is SupabaseManager.ProfileError {
                 self.error = "auth.error.profile_missing"
-                isLoading = false
                 return
             }
             if message.lowercased().contains("email not confirmed") {
@@ -73,15 +74,15 @@ final class AuthManager {
             }
             self.error = message
         }
-        
-        isLoading = false
     }
     
     func signUp(email: String, name: String, password: String) async {
+        guard !isLoading else { return }
         isLoading = true
         error = nil
         infoKey = nil
         needsEmailConfirmation = false
+        defer { isLoading = false }
         
         do {
             let result = try await supabase.signUp(email: email, password: password, name: name)
@@ -92,6 +93,7 @@ final class AuthManager {
                 isAuthenticated = false
                 needsEmailConfirmation = true
                 infoKey = "auth.verify.sent"
+                isLoading = false
                 return
             }
             
@@ -109,8 +111,6 @@ final class AuthManager {
         } catch {
             self.error = error.localizedDescription
         }
-        
-        isLoading = false
     }
     
     func signOut() {
@@ -208,6 +208,10 @@ final class AuthManager {
         isLoading = false
     }
 
+    func sendPasswordReset(email: String) async throws {
+        try await supabase.sendPasswordReset(email: email)
+    }
+
     func verifyEmailOTP(code: String) async {
         guard let email = pendingEmail else { return }
         isLoading = true
@@ -243,5 +247,12 @@ final class AuthManager {
         }
         
         isLoading = false
+    }
+
+    func cancelEmailVerification() {
+        needsEmailConfirmation = false
+        pendingEmail = nil
+        infoKey = nil
+        error = nil
     }
 }

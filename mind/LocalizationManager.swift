@@ -236,15 +236,24 @@ struct LocalizedStrings {
         
         // Email Verification
         "auth.verify.title": "Verify your email",
-        "auth.verify.message": "We sent a verification link. Please confirm to continue.",
+        "auth.verify.message": "We sent a verification code. Enter the latest code to continue.",
         "auth.verify.code.placeholder": "Verification code",
         "auth.verify.button": "Verify code",
         "auth.verify.resend": "Resend verification email",
-        "auth.verify.sent": "Verification email sent.",
+        "auth.verify.sent": "Verification code sent.",
         "auth.verify.success": "Email verified. You can sign in now.",
+        "auth.verify.change_email": "Change email",
+        "auth.verify.resend_in": "Resend in %ds",
+        "auth.forgot": "Forgot password?",
+        "auth.reset.title": "Reset Password",
+        "auth.reset.subtitle": "We’ll email you a link to reset your password.",
+        "auth.reset.send": "Send Reset Link",
+        "auth.reset.sent": "Reset email sent. Check your inbox.",
         
         // OTP Errors
-        "auth.error.invalid_code": "Invalid verification code.",
+        "auth.error.invalid_code": "Invalid or expired verification code. Please use the latest code.",
+        "auth.error.rate_limit": "Too many requests. Please wait and try again.",
+        "auth.error.resend_wait": "Please wait before requesting another code.",
         
         // Add Bookmark Errors
         "add.error.duplicate": "This URL is already saved.",
@@ -425,15 +434,24 @@ struct LocalizedStrings {
         
         // Email Verification
         "auth.verify.title": "E-postanı doğrula",
-        "auth.verify.message": "Doğrulama bağlantısı gönderdik. Devam etmek için onayla.",
+        "auth.verify.message": "Doğrulama kodu gönderdik. Devam etmek için en son gelen kodu gir.",
         "auth.verify.code.placeholder": "Doğrulama kodu",
         "auth.verify.button": "Kodu doğrula",
         "auth.verify.resend": "Doğrulama e-postasını tekrar gönder",
-        "auth.verify.sent": "Doğrulama e-postası gönderildi.",
+        "auth.verify.sent": "Doğrulama kodu gönderildi.",
         "auth.verify.success": "E-posta doğrulandı. Giriş yapabilirsin.",
+        "auth.verify.change_email": "E-postayı değiştir",
+        "auth.verify.resend_in": "%ds sonra tekrar gönder",
+        "auth.forgot": "Şifremi unuttum",
+        "auth.reset.title": "Şifreyi Sıfırla",
+        "auth.reset.subtitle": "Şifreni sıfırlaman için e‑posta göndereceğiz.",
+        "auth.reset.send": "Sıfırlama Bağlantısı Gönder",
+        "auth.reset.sent": "E‑posta gönderildi. Lütfen gelen kutunu kontrol et.",
         
         // OTP Errors
-        "auth.error.invalid_code": "Doğrulama kodu hatalı.",
+        "auth.error.invalid_code": "Doğrulama kodu geçersiz veya süresi dolmuş. En son gelen kodu kullan.",
+        "auth.error.rate_limit": "Çok fazla istek yapıldı. Lütfen biraz bekleyip tekrar dene.",
+        "auth.error.resend_wait": "Yeni kod istemeden önce biraz beklemelisin.",
         
         // Add Bookmark Errors
         "add.error.duplicate": "Bu URL zaten kaydedilmiş.",

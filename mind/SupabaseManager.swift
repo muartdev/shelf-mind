@@ -101,6 +101,10 @@ final class SupabaseManager {
             type: .signup
         )
     }
+
+    func sendPasswordReset(email: String) async throws {
+        try await client.auth.resetPasswordForEmail(email)
+    }
     
     func getCurrentUser() async throws -> User? {
         // Try to get current session

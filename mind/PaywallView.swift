@@ -12,13 +12,12 @@ struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(ThemeManager.self) private var themeManager
     @Environment(LocalizationManager.self) private var localization
+    @State private var paywall = PaywallManager.shared
     @State private var selectedProductID: PaywallManager.ProductID = .yearly
     @State private var isPurchasing = false
     @State private var errorMessage: String?
     @State private var isAnimating = false // Deprecated pulse animation
 
-    
-    private var paywall = PaywallManager.shared
     
     private var selectedProduct: Product? {
         paywall.products.first { $0.id == selectedProductID.rawValue }

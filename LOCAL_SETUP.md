@@ -27,7 +27,9 @@ cp Config.xcconfig.example Config.xcconfig
 
 3. Open `Config.xcconfig` and add your credentials:
 ```
-SUPABASE_URL = https://your-project-id.supabase.co
+// NOTE: In .xcconfig, `//` starts a comment, so avoid writing https:// directly.
+SUPABASE_SLASH = /
+SUPABASE_URL = https:$(SUPABASE_SLASH)$(SUPABASE_SLASH)your-project-id.supabase.co
 SUPABASE_ANON_KEY = your-anon-key-here
 ```
 

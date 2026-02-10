@@ -16,6 +16,22 @@ struct AuthView: View {
     @State private var password = ""
     @State private var name = ""
     @State private var verificationCode = ""
+    @FocusState private var focusedField: Field?
+    private let otpLength = 6
+    @State private var resendCooldown = 0
+    @State private var resendTask: Task<Void, Never>?
+    @State private var showingResetSheet = false
+    @State private var resetEmail = ""
+    @State private var resetError: String?
+    @State private var resetSent = false
+    @State private var isResetLoading = false
+
+    private enum Field {
+        case name
+        case email
+        case password
+        case otp
+    }
     
     var body: some View {
         ZStack {
@@ -98,51 +114,35 @@ struct AuthView: View {
                     
                     // Form
                     VStack(spacing: 20) {
-                        if isSignUp {
-                            TextField(localization.localizedString("auth.name"), text: $name)
+                        if authManager.needsEmailConfirmation {
+                            verificationSection
+                        } else {
+                            if isSignUp {
+                                TextField(localization.localizedString("auth.name"), text: $name)
+                                    .textFieldStyle()
+                                    .textContentType(.name)
+                                    .focused($focusedField, equals: .name)
+                                    .submitLabel(.next)
+                                    .onSubmit { focusedField = .email }
+                            }
+                            
+                            TextField(localization.localizedString("auth.email"), text: $email)
                                 .textFieldStyle()
-                                .textContentType(.name)
+                                .textContentType(.emailAddress)
+                               .textInputAutocapitalization(.never)
+                               .keyboardType(.emailAddress)
+                               .autocorrectionDisabled(true)
+                               .focused($focusedField, equals: .email)
+                               .submitLabel(.next)
+                               .onSubmit { focusedField = .password }
+                           
+                           SecureField(localization.localizedString("auth.password"), text: $password)
+                               .textFieldStyle()
+                               .textContentType(isSignUp ? .newPassword : .password)
+                               .focused($focusedField, equals: .password)
+                               .submitLabel(.done)
+                               .onSubmit { focusedField = nil }
                         }
-                        
-                        TextField(localization.localizedString("auth.email"), text: $email)
-                            .textFieldStyle()
-                            .textContentType(.emailAddress)
-                           .textInputAutocapitalization(.never)
-                           .keyboardType(.emailAddress)
-                           .autocorrectionDisabled(true)
-                       
-                       SecureField(localization.localizedString("auth.password"), text: $password)
-                           .textFieldStyle()
-                           .textContentType(isSignUp ? .newPassword : .password)
-
-                       if authManager.needsEmailConfirmation {
-                           VStack(alignment: .leading, spacing: 8) {
-                               Text(localization.localizedString("auth.verify.title"))
-                                   .font(.caption)
-                                   .foregroundStyle(.secondary)
-                               Text(localization.localizedString("auth.verify.message"))
-                                   .font(.caption)
-                                   .foregroundStyle(.secondary)
-                               if let pendingEmail = authManager.pendingEmail {
-                                   Text(pendingEmail)
-                                       .font(.caption2)
-                                       .foregroundStyle(.secondary)
-                               }
-                               TextField(localization.localizedString("auth.verify.code.placeholder"), text: $verificationCode)
-                                   .textFieldStyle()
-                                   .keyboardType(.numberPad)
-                                   .textInputAutocapitalization(.never)
-                               Button(localization.localizedString("auth.verify.button")) {
-                                   Task { await authManager.verifyEmailOTP(code: verificationCode) }
-                               }
-                               .font(.caption)
-                               Button(localization.localizedString("auth.verify.resend")) {
-                                   Task { await authManager.resendConfirmation() }
-                               }
-                               .font(.caption)
-                           }
-                           .frame(maxWidth: .infinity, alignment: .leading)
-                       }
 
                        if let infoKey = authManager.infoKey {
                            Text(localization.localizedString(infoKey))
@@ -158,15 +158,29 @@ struct AuthView: View {
                                .frame(maxWidth: .infinity, alignment: .leading)
                        }
                         
-                        Button(action: authenticate) {
-                            if authManager.isLoading {
-                                ProgressView()
-                                    .tint(.white)
-                            } else {
-                                Text(isSignUp ? localization.localizedString("auth.signup") : localization.localizedString("auth.signin"))
+                        if !authManager.needsEmailConfirmation {
+                            Button(action: authenticate) {
+                                if authManager.isLoading {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Text(isSignUp ? localization.localizedString("auth.signup") : localization.localizedString("auth.signin"))
+                                }
+                            }
+                            .buttonStyle(PrimaryButtonStyle(theme: themeManager.currentTheme))
+                            .disabled(authManager.isLoading || email.isEmpty || password.isEmpty || (isSignUp && name.isEmpty))
+                            
+                            if !isSignUp {
+                                Button(localization.localizedString("auth.forgot")) {
+                                    resetEmail = email
+                                    resetError = nil
+                                    resetSent = false
+                                    showingResetSheet = true
+                                }
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                             }
                         }
-                        .buttonStyle(PrimaryButtonStyle(theme: themeManager.currentTheme))
                         Button(action: { withAnimation { isSignUp.toggle() } }) {
                             Text(isSignUp ? localization.localizedString("auth.alreadyhave") : localization.localizedString("auth.donthave"))
                                 .font(.subheadline)
@@ -189,6 +203,161 @@ struct AuthView: View {
                     Spacer()
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { focusedField = nil }
+        .sheet(isPresented: $showingResetSheet) {
+            NavigationStack {
+                VStack(spacing: 16) {
+                    Text(localization.localizedString("auth.reset.title"))
+                        .font(.headline)
+                    Text(localization.localizedString("auth.reset.subtitle"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    
+                    TextField(localization.localizedString("auth.email"), text: $resetEmail)
+                        .textFieldStyle()
+                        .textContentType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.emailAddress)
+                        .autocorrectionDisabled(true)
+                    
+                    if let resetError {
+                        Text(getLocalizedError(resetError))
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
+                    if resetSent {
+                        Text(localization.localizedString("auth.reset.sent"))
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
+                    Button {
+                        Task {
+                            resetError = nil
+                            resetSent = false
+                            guard !resetEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                                resetError = localization.localizedString("auth.error.missing_email")
+                                return
+                            }
+                            isResetLoading = true
+                            defer { isResetLoading = false }
+                            do {
+                                try await authManager.sendPasswordReset(email: resetEmail)
+                                resetSent = true
+                            } catch {
+                                resetError = error.localizedDescription
+                            }
+                        }
+                    } label: {
+                        if isResetLoading {
+                            ProgressView().tint(.white)
+                        } else {
+                            Text(localization.localizedString("auth.reset.send"))
+                        }
+                    }
+                    .buttonStyle(PrimaryButtonStyle(theme: themeManager.currentTheme))
+                    .disabled(isResetLoading)
+                    
+                    Spacer()
+                }
+                .padding()
+                .navigationTitle(localization.localizedString("auth.reset.title"))
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(localization.localizedString("common.cancel")) {
+                            showingResetSheet = false
+                        }
+                    }
+                }
+            }
+            .presentationDetents([.medium])
+        }
+        .onChange(of: authManager.infoKey) { _, newValue in
+            if newValue == "auth.verify.sent" {
+                verificationCode = ""
+                startResendCooldown(seconds: 60)
+            }
+        }
+    }
+
+    private var verificationSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(localization.localizedString("auth.verify.title"))
+                .font(.headline)
+            Text(localization.localizedString("auth.verify.message"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if let pendingEmail = authManager.pendingEmail {
+                Text(pendingEmail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            TextField(localization.localizedString("auth.verify.code.placeholder"), text: $verificationCode)
+                .textFieldStyle()
+                .keyboardType(.numberPad)
+                .textInputAutocapitalization(.never)
+                .textContentType(.oneTimeCode)
+                .focused($focusedField, equals: .otp)
+                .submitLabel(.done)
+                .onSubmit { focusedField = nil }
+                .onChange(of: verificationCode) { _, newValue in
+                    let filtered = newValue.filter { $0.isNumber }
+                    if filtered != newValue {
+                        verificationCode = filtered
+                    }
+                    if verificationCode.count > otpLength {
+                        verificationCode = String(verificationCode.prefix(otpLength))
+                    }
+                }
+
+            Button(localization.localizedString("auth.verify.button")) {
+                Task { await authManager.verifyEmailOTP(code: verificationCode) }
+            }
+            .buttonStyle(PrimaryButtonStyle(theme: themeManager.currentTheme))
+            .disabled(authManager.isLoading || verificationCode.count < otpLength)
+
+            Button(resendButtonTitle) {
+                Task { await authManager.resendConfirmation() }
+            }
+            .font(.caption)
+            .disabled(authManager.isLoading || resendCooldown > 0)
+
+            Button(localization.localizedString("auth.verify.change_email")) {
+                authManager.cancelEmailVerification()
+                verificationCode = ""
+                resendCooldown = 0
+                resendTask?.cancel()
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var resendButtonTitle: String {
+        if resendCooldown > 0 {
+            return String(format: localization.localizedString("auth.verify.resend_in"), resendCooldown)
+        }
+        return localization.localizedString("auth.verify.resend")
+    }
+
+    private func startResendCooldown(seconds: Int) {
+        resendTask?.cancel()
+        resendCooldown = seconds
+        resendTask = Task { @MainActor in
+            while resendCooldown > 0 {
+                try? await Task.sleep(for: .seconds(1))
+                resendCooldown -= 1
+            }
         }
     }
     
@@ -206,10 +375,18 @@ struct AuthView: View {
             return localization.localizedString("auth.error.password_too_short")
         } else if lowerError.contains("already registered") {
             return localization.localizedString("auth.error.already_registered")
+        } else if lowerError.contains("already exists") || lowerError.contains("email") && lowerError.contains("exists") {
+            return localization.localizedString("auth.error.already_registered")
         } else if lowerError.contains("email not confirmed") || lowerError.contains("confirm your email") {
             return localization.localizedString("auth.error.email_not_confirmed")
-        } else if lowerError.contains("invalid") && lowerError.contains("otp") {
+        } else if lowerError.contains("token has expired")
+                    || (lowerError.contains("token") && lowerError.contains("invalid"))
+                    || (lowerError.contains("invalid") && lowerError.contains("otp")) {
             return localization.localizedString("auth.error.invalid_code")
+        } else if lowerError.contains("rate limit") || lowerError.contains("too many requests") {
+            return localization.localizedString("auth.error.rate_limit")
+        } else if lowerError.contains("security purposes") && lowerError.contains("seconds") {
+            return localization.localizedString("auth.error.resend_wait")
         } else if lowerError.contains("network") {
             return localization.localizedString("auth.error.network")
         } else {
@@ -220,6 +397,7 @@ struct AuthView: View {
 
     
     private func authenticate() {
+        focusedField = nil
         Task {
             if isSignUp {
                 await authManager.signUp(email: email, name: name, password: password)

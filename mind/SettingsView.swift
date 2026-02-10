@@ -23,6 +23,12 @@ struct SettingsView: View {
     @State private var showingPaywall = false
     @State private var showingPaywallForTheme = false
     @State private var showingPremiumDetails = false
+
+    private var appVersion: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        return "\(version) (\(build))"
+    }
     
     var body: some View {
         NavigationStack {
@@ -149,7 +155,7 @@ struct SettingsView: View {
                             HStack {
                                 Text(localization.localizedString("settings.version"))
                                 Spacer()
-                                Text("1.0.0")
+                                Text(appVersion)
                                     .foregroundStyle(.secondary)
                             }
                         }

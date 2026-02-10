@@ -65,21 +65,25 @@ struct BookmarkDetailView: View {
             }
             .sheet(isPresented: $showingReminderSheet) {
                 NavigationStack {
-                    VStack(spacing: 20) {
-                        DatePicker("Select Time", selection: $reminderDate, displayedComponents: [.date, .hourAndMinute])
-                            .datePickerStyle(.graphical)
-                            .padding()
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                        
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            DatePicker("Select Time", selection: $reminderDate, displayedComponents: [.date, .hourAndMinute])
+                                .datePickerStyle(.graphical)
+                                .padding()
+                                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                        }
+                        .padding()
+                    }
+                    .safeAreaInset(edge: .bottom) {
                         Button("Set Reminder") {
                             scheduleNotification()
                         }
                         .buttonStyle(PrimaryButtonStyle(theme: themeManager.currentTheme))
-                        .padding()
-                        
-                        Spacer()
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                        .padding(.bottom, 16)
+                        .background(.ultraThinMaterial)
                     }
-                    .padding()
                     .navigationTitle("Set Reminder")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
@@ -88,7 +92,8 @@ struct BookmarkDetailView: View {
                         }
                     }
                 }
-                .presentationDetents([.medium])
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showingShareSheet) {
                 if let url = URL(string: bookmark.url) {

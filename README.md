@@ -70,7 +70,9 @@ Quick summary:
 1. Copy `Config.xcconfig.example` to `Config.xcconfig`
 2. Add your Supabase credentials to `Config.xcconfig`:
    ```
-   SUPABASE_URL = https://your-project.supabase.co
+   // NOTE: In .xcconfig, `//` starts a comment, so avoid writing https:// directly.
+   SUPABASE_SLASH = /
+   SUPABASE_URL = https:$(SUPABASE_SLASH)$(SUPABASE_SLASH)your-project.supabase.co
    SUPABASE_ANON_KEY = your_anon_key_here
    ```
 3. Add Swift Package Dependencies in Xcode (File > Add Package Dependencies)

@@ -46,6 +46,43 @@ final class Bookmark {
 }
 
 extension Bookmark {
+    static func dedupeKey(_ urlString: String) -> String {
+        let normalized = normalizedURLString(urlString)
+        if let tweetID = tweetID(from: normalized) {
+            return "tweet:\(tweetID)"
+        }
+        return normalized
+    }
+
+    private static func tweetID(from urlString: String) -> String? {
+        guard let url = URL(string: urlString),
+              let host = url.host?.lowercased(),
+              host.contains("twitter.com") || host.contains("x.com") else {
+            return nil
+        }
+
+        let parts = url.path.split(separator: "/").map(String.init)
+        for (index, part) in parts.enumerated() {
+            if part == "status" || part == "statuses" {
+                let nextIndex = index + 1
+                guard nextIndex < parts.count else { continue }
+                let id = parts[nextIndex]
+                if !id.isEmpty, id.allSatisfy({ $0.isNumber }) {
+                    return id
+                }
+            }
+        }
+
+        if let iIndex = parts.firstIndex(of: "i"), iIndex + 2 < parts.count, parts[iIndex + 1] == "status" {
+            let id = parts[iIndex + 2]
+            if !id.isEmpty, id.allSatisfy({ $0.isNumber }) {
+                return id
+            }
+        }
+
+        return nil
+    }
+
     static func normalizedURLString(_ urlString: String) -> String {
         let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard var components = URLComponents(string: trimmed) else {

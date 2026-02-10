@@ -332,8 +332,8 @@ struct ContentView: View {
                 continue
             }
 
-            let normalizedURL = Bookmark.normalizedURLString(url)
-            if bookmarks.contains(where: { Bookmark.normalizedURLString($0.url) == normalizedURL }) {
+            let dedupeKey = Bookmark.dedupeKey(url)
+            if bookmarks.contains(where: { Bookmark.dedupeKey($0.url) == dedupeKey }) {
                 continue
             }
             
