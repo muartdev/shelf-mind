@@ -138,7 +138,7 @@ struct AuthView: View {
                            
                            SecureField(localization.localizedString("auth.password"), text: $password)
                                .textFieldStyle()
-                               .textContentType(isSignUp ? .newPassword : .password)
+                               .textContentType(.password)
                                .focused($focusedField, equals: .password)
                                .submitLabel(.done)
                                .onSubmit { focusedField = nil }
@@ -151,11 +151,28 @@ struct AuthView: View {
                                .frame(maxWidth: .infinity, alignment: .leading)
                        }
                        
-                       if let error = authManager.error {
-                           Text(getLocalizedError(error))
-                               .font(.caption)
-                               .foregroundStyle(.red)
+                       if isSignUp && !password.isEmpty && password.count < 6 {
+                           Label(localization.localizedString("auth.error.password_too_short"), systemImage: "exclamationmark.circle.fill")
+                               .font(.caption2)
+                               .foregroundStyle(.orange)
+                               .padding(.horizontal, 8)
+                               .padding(.vertical, 4)
+                               .background(.orange.opacity(0.1), in: Capsule())
                                .frame(maxWidth: .infinity, alignment: .leading)
+                               .transition(.move(edge: .top).combined(with: .opacity))
+                       }
+                       
+                       if let error = authManager.error {
+                           HStack(spacing: 6) {
+                               Image(systemName: "exclamationmark.triangle.fill")
+                               Text(getLocalizedError(error))
+                           }
+                           .font(.caption)
+                           .foregroundStyle(.red)
+                           .padding(.horizontal, 8)
+                           .padding(.vertical, 4)
+                           .background(.red.opacity(0.1), in: Capsule())
+                           .frame(maxWidth: .infinity, alignment: .leading)
                        }
                         
                         if !authManager.needsEmailConfirmation {
@@ -168,7 +185,8 @@ struct AuthView: View {
                                 }
                             }
                             .buttonStyle(PrimaryButtonStyle(theme: themeManager.currentTheme))
-                            .disabled(authManager.isLoading || email.isEmpty || password.isEmpty || (isSignUp && name.isEmpty))
+                            .disabled(authManager.isLoading || email.isEmpty || password.isEmpty || 
+                                     (isSignUp && (name.isEmpty || password.count < 6)))
                             
                             if !isSignUp {
                                 Button(localization.localizedString("auth.forgot")) {
