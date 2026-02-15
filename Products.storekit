@@ -5,7 +5,7 @@
       {
         "locale" : "en_US",
         "policyText" : "",
-        "policyURL" : ""
+        "policyURL" : "https://muartdev.github.io/mindshelf-privacy/"
       }
     ]
   },
@@ -15,43 +15,13 @@
   ],
   "products" : [
     {
-      "displayPrice" : "2.99",
-      "familyShareable" : false,
-      "internalID" : "9A762023",
-      "localizations" : [
-        {
-          "description" : "",
-          "displayName" : "",
-          "locale" : "en_US"
-        }
-      ],
-      "productID" : "com.muartdev.mindshelf.premium.monthly",
-      "referenceName" : "Premium Monthly",
-      "type" : "NonConsumable"
-    },
-    {
-      "displayPrice" : "12.99",
-      "familyShareable" : false,
-      "internalID" : "F8E2F812",
-      "localizations" : [
-        {
-          "description" : "",
-          "displayName" : "",
-          "locale" : "en_US"
-        }
-      ],
-      "productID" : "com.muartdev.mindshelf.premium.yearly",
-      "referenceName" : "Premium Yearly",
-      "type" : "NonConsumable"
-    },
-    {
       "displayPrice" : "29.99",
       "familyShareable" : false,
       "internalID" : "B5CB5B74",
       "localizations" : [
         {
-          "description" : "",
-          "displayName" : "",
+          "description" : "Unlock all premium features forever with a single purchase.",
+          "displayName" : "MindShelf Premium Lifetime",
           "locale" : "en_US"
         }
       ],
@@ -75,7 +45,71 @@
     "_timeRate" : 0
   },
   "subscriptionGroups" : [
+    {
+      "id" : "mindshelf_premium",
+      "localizations" : [
 
+      ],
+      "name" : "MindShelf Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "2.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "9A762023",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlimited bookmarks, URL previews, custom themes & cloud sync.",
+              "displayName" : "MindShelf Premium Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.muartdev.mindshelf.premium.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Premium Monthly",
+          "subscriptionGroupID" : "mindshelf_premium",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "12.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "F8E2F812",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlimited bookmarks, URL previews, custom themes & cloud sync. Save 64% vs monthly.",
+              "displayName" : "MindShelf Premium Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.muartdev.mindshelf.premium.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Premium Yearly",
+          "subscriptionGroupID" : "mindshelf_premium",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
   ],
   "version" : {
     "major" : 4,

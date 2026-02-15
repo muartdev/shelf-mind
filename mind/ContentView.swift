@@ -73,7 +73,7 @@ struct ContentView: View {
                         icon: selectedCategory != nil || showOnlyUnread ? "tray" : "bookmark.slash",
                         title: emptyStateTitle,
                         message: emptyStateMessage,
-                        buttonTitle: selectedCategory != nil || showOnlyUnread ? "Clear Filters" : "Add Your First Bookmark",
+                        buttonTitle: selectedCategory != nil || showOnlyUnread ? localization.localizedString("main.clear.filters") : localization.localizedString("main.add.first"),
                         action: {
                             if selectedCategory != nil || showOnlyUnread {
                                 clearFilters()
@@ -100,9 +100,11 @@ struct ContentView: View {
             .task {
                 await loadBookmarksFromSupabase()
                 loadPendingBookmarksFromShareExtension()
+                syncSavedURLsToAppGroup()
             }
             .onAppear {
                 loadPendingBookmarksFromShareExtension()
+                syncSavedURLsToAppGroup()
             }
         }
     }
@@ -163,8 +165,8 @@ struct ContentView: View {
     }
     
     private func refreshBookmarks() async {
-        // Simulate refresh - in real app, sync with Supabase
-        try? await Task.sleep(for: .seconds(1))
+        await loadBookmarksFromSupabase()
+        loadPendingBookmarksFromShareExtension()
     }
     
     @ViewBuilder
@@ -192,7 +194,7 @@ struct ContentView: View {
                 }
                 
                 FilterChip(
-                    title: "Unread",
+                    title: localization.localizedString("main.filter.unread"),
                     icon: "circle.badge",
                     count: unreadCount > 0 ? unreadCount : nil,
                     isSelected: showOnlyUnread,
@@ -222,7 +224,7 @@ struct ContentView: View {
             
             if selectedCategory != nil || showOnlyUnread {
                 Button(action: clearFilters) {
-                    Label("Clear Filters", systemImage: "xmark.circle")
+                    Label(localization.localizedString("main.clear.filters"), systemImage: "xmark.circle")
                         .font(.headline)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
@@ -230,7 +232,7 @@ struct ContentView: View {
                 .glassButtonStyle()
             } else {
                 Button(action: { showingAddBookmark = true }) {
-                    Label("Add Your First Bookmark", systemImage: "plus")
+                    Label(localization.localizedString("main.add.first"), systemImage: "plus")
                         .font(.headline)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
@@ -242,21 +244,21 @@ struct ContentView: View {
     
     private var emptyStateTitle: String {
         if selectedCategory != nil {
-            return "No Bookmarks in This Category"
+            return localization.localizedString("main.empty.filtered.title")
         } else if showOnlyUnread {
-            return "All Caught Up!"
+            return localization.localizedString("main.empty.unread.title")
         } else {
-            return "No Bookmarks Yet"
+            return localization.localizedString("main.empty.default.title")
         }
     }
     
     private var emptyStateMessage: String {
         if selectedCategory != nil {
-            return "Try adding a bookmark with this category or clear the filter to see all"
+            return localization.localizedString("main.empty.filtered.message")
         } else if showOnlyUnread {
-            return "You've read all your bookmarks. Great job!"
+            return localization.localizedString("main.empty.unread.message")
         } else {
-            return "Save interesting content from X, articles, and videos to read later"
+            return localization.localizedString("main.empty.default.message")
         }
     }
     
@@ -270,7 +272,9 @@ struct ContentView: View {
     private func loadBookmarksFromSupabase() async {
         guard !isLoadingFromSupabase else { return }
         guard let userId = authManager.currentUser?.id else {
+            #if DEBUG
             print("⚠️ No user logged in, skipping Supabase fetch")
+            #endif
             return
         }
         
@@ -279,7 +283,9 @@ struct ContentView: View {
         
         do {
             let supabaseBookmarks = try await SupabaseManager.shared.fetchBookmarks(userId: userId)
+            #if DEBUG
             print("✅ Fetched \(supabaseBookmarks.count) bookmarks from Supabase")
+            #endif
             
             // Sync to local SwiftData
             for dto in supabaseBookmarks {
@@ -307,9 +313,13 @@ struct ContentView: View {
             }
             
             try modelContext.save()
+            #if DEBUG
             print("✅ Synced bookmarks to local database")
+            #endif
         } catch {
+            #if DEBUG
             print("❌ Failed to load bookmarks from Supabase: \(error)")
+            #endif
         }
     }
     
@@ -323,7 +333,9 @@ struct ContentView: View {
             return
         }
         
+        #if DEBUG
         print("📥 Found \(pendingBookmarks.count) pending bookmarks from Share Extension")
+        #endif
         
         for bookmarkData in pendingBookmarks {
             guard let title = bookmarkData["title"] as? String,
@@ -336,7 +348,9 @@ struct ContentView: View {
             if bookmarks.contains(where: { Bookmark.dedupeKey($0.url) == dedupeKey }) {
                 continue
             }
-            
+
+            let thumbnailURL = bookmarkData["thumbnailURL"] as? String
+
             let bookmark = Bookmark(
                 title: title,
                 url: url,
@@ -344,20 +358,41 @@ struct ContentView: View {
                 category: category,
                 dateAdded: Date(),
                 isRead: false,
-                thumbnailURL: nil,
+                thumbnailURL: thumbnailURL,
                 tags: []
             )
-            
+
             modelContext.insert(bookmark)
-            
+
+            // Fetch preview if thumbnail is missing
+            if thumbnailURL == nil || thumbnailURL?.isEmpty == true {
+                Task {
+                    if let preview = try? await URLPreviewManager.shared.fetchPreview(for: url) {
+                        await MainActor.run {
+                            if let img = preview.imageURL, !img.isEmpty {
+                                bookmark.thumbnailURL = img
+                            }
+                            if bookmark.title.isEmpty, let previewTitle = preview.title {
+                                bookmark.title = previewTitle
+                            }
+                            try? modelContext.save()
+                        }
+                    }
+                }
+            }
+
             // Also save to Supabase
             if let userId = authManager.currentUser?.id {
                 Task {
                     do {
                         try await SupabaseManager.shared.createBookmark(bookmark, userId: userId)
+                        #if DEBUG
                         print("✅ Synced shared bookmark to Supabase: \(title)")
+                        #endif
                     } catch {
+                        #if DEBUG
                         print("❌ Failed to sync shared bookmark: \(error)")
+                        #endif
                     }
                 }
             }
@@ -367,7 +402,23 @@ struct ContentView: View {
         defaults?.removeObject(forKey: "pendingBookmarks")
         defaults?.synchronize()
         
+        #if DEBUG
         print("✅ Imported \(pendingBookmarks.count) bookmarks from Share Extension")
+        #endif
+
+        syncSavedURLsToAppGroup()
+    }
+
+    /// Writes saved bookmark URLs and dates to shared UserDefaults so the Share Extension can detect duplicates.
+    private func syncSavedURLsToAppGroup() {
+        let defaults = UserDefaults(suiteName: "group.com.muartdev.mind")
+        var urlMap: [String: Double] = [:]
+        for bookmark in bookmarks {
+            let key = Bookmark.dedupeKey(bookmark.url)
+            urlMap[key] = bookmark.dateAdded.timeIntervalSince1970
+        }
+        defaults?.set(urlMap, forKey: "savedBookmarkURLs")
+        defaults?.synchronize()
     }
     
     @ToolbarContentBuilder

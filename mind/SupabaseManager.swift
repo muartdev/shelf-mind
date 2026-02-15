@@ -227,9 +227,8 @@ final class SupabaseManager {
     }
     
     func updateBookmark(_ bookmark: Bookmark) async throws {
-        let dto = BookmarkDTO(
-            id: bookmark.id,
-            user_id: nil, // Not needed for update
+        // Use BookmarkUpdateDTO to exclude user_id - NOT NULL column must not be set to null
+        let dto = BookmarkUpdateDTO(
             title: bookmark.title,
             url: bookmark.url,
             notes: bookmark.notes,
@@ -240,7 +239,18 @@ final class SupabaseManager {
         )
         
         guard (try? await client.auth.session) != nil else {
-            enqueuePendingOperation(.init(type: .update, bookmark: dto))
+            let fullDto = BookmarkDTO(
+                id: bookmark.id,
+                user_id: nil,
+                title: bookmark.title,
+                url: bookmark.url,
+                notes: bookmark.notes,
+                category: bookmark.category,
+                tags: bookmark.tags,
+                is_read: bookmark.isRead,
+                thumbnail_url: bookmark.thumbnailURL
+            )
+            enqueuePendingOperation(.init(type: .update, bookmark: fullDto))
             return
         }
         
@@ -250,7 +260,18 @@ final class SupabaseManager {
                 .eq("id", value: bookmark.id.uuidString)
                 .execute()
         } catch {
-            enqueuePendingOperation(.init(type: .update, bookmark: dto))
+            let fullDto = BookmarkDTO(
+                id: bookmark.id,
+                user_id: nil,
+                title: bookmark.title,
+                url: bookmark.url,
+                notes: bookmark.notes,
+                category: bookmark.category,
+                tags: bookmark.tags,
+                is_read: bookmark.isRead,
+                thumbnail_url: bookmark.thumbnailURL
+            )
+            enqueuePendingOperation(.init(type: .update, bookmark: fullDto))
             throw error
         }
     }
@@ -291,12 +312,16 @@ final class SupabaseManager {
         let premium_until: Date?
         let premium_purchase_date: Date?
         let language_code: String?
+        let notifications_enabled: Bool?
+        let reminder_time: String?
 
         enum CodingKeys: String, CodingKey {
             case is_premium
             case premium_until
             case premium_purchase_date
             case language_code
+            case notifications_enabled
+            case reminder_time
         }
 
         func encode(to encoder: Encoder) throws {
@@ -313,15 +338,28 @@ final class SupabaseManager {
             if let language_code {
                 try container.encode(language_code, forKey: .language_code)
             }
+            if let notifications_enabled {
+                try container.encode(notifications_enabled, forKey: .notifications_enabled)
+            }
+            if let reminder_time {
+                try container.encode(reminder_time, forKey: .reminder_time)
+            }
         }
     }
     
-    func updateUserProfile(userId: UUID, isPremium: Bool? = nil, expirationDate: Date? = nil, purchaseDate: Date? = nil, languageCode: String? = nil) async throws {
+    func updateUserProfile(userId: UUID, isPremium: Bool? = nil, expirationDate: Date? = nil, purchaseDate: Date? = nil, languageCode: String? = nil, notificationsEnabled: Bool? = nil, reminderTime: Date? = nil) async throws {
+        let reminderTimeString: String? = reminderTime.map { date in
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm:ss"
+            return formatter.string(from: date)
+        }
         let update = PremiumUpdate(
             is_premium: isPremium,
             premium_until: expirationDate,
             premium_purchase_date: purchaseDate,
-            language_code: languageCode
+            language_code: languageCode,
+            notifications_enabled: notificationsEnabled,
+            reminder_time: reminderTimeString
         )
         
         // Since we want to support partial updates, we might need a more flexible approach if Supabase Encodable doesn't skip nil.
@@ -357,8 +395,17 @@ final class SupabaseManager {
                     
                 case .update:
                     guard let dto = op.bookmark else { continue }
+                    let updateDto = BookmarkUpdateDTO(
+                        title: dto.title,
+                        url: dto.url,
+                        notes: dto.notes,
+                        category: dto.category,
+                        tags: dto.tags,
+                        is_read: dto.is_read,
+                        thumbnail_url: dto.thumbnail_url
+                    )
                     try await client.from("bookmarks")
-                        .update(dto)
+                        .update(updateDto)
                         .eq("id", value: dto.id.uuidString)
                         .execute()
                     
@@ -416,6 +463,17 @@ struct UserProfile: Codable {
     let premium_until: Date?
     let premium_purchase_date: Date?
     let language_code: String?
+}
+
+/// DTO for bookmark updates - excludes user_id and id to avoid NOT NULL violation
+struct BookmarkUpdateDTO: Codable {
+    var title: String
+    var url: String
+    var notes: String
+    var category: String
+    var tags: [String]
+    var is_read: Bool
+    var thumbnail_url: String?
 }
 
 struct BookmarkDTO: Codable {

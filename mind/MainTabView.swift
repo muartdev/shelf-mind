@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct MainTabView: View {
     @Environment(LocalizationManager.self) private var localization
@@ -34,4 +35,6 @@ struct MainTabView: View {
     MainTabView()
         .environment(AuthManager())
         .environment(ThemeManager())
+        .environment(LocalizationManager.shared)
+        .modelContainer(for: [Bookmark.self, User.self], inMemory: true)
 }

@@ -66,30 +66,35 @@ struct AuthView: View {
                             .multilineTextAlignment(.center)
                     }
                     
-                    // Language Switcher (Login screen)
-                    HStack(spacing: 20) {
+                    // Language Switcher
+                    Menu {
                         ForEach(LocalizationManager.AppLanguage.allCases) { language in
                             Button(action: {
                                 withAnimation(.smooth) {
                                     localization.currentLanguage = language
                                 }
                             }) {
-                                Text("\(language.flag) \(language.rawValue)")
-                                    .font(.caption)
-                                    .fontWeight(localization.currentLanguage == language ? .bold : .regular)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(
-                                        localization.currentLanguage == language ? .white.opacity(0.1) : .clear,
-                                        in: Capsule()
-                                    )
-                                    .overlay(
-                                        Capsule()
-                                            .strokeBorder(localization.currentLanguage == language ? .white.opacity(0.3) : .clear, lineWidth: 1)
-                                    )
+                                HStack {
+                                    Text("\(language.flag) \(language.rawValue)")
+                                    if localization.currentLanguage == language {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
                             }
-                            .foregroundStyle(localization.currentLanguage == language ? .primary : .secondary)
                         }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "globe")
+                                .font(.subheadline)
+                            Text("\(localization.currentLanguage.flag) \(localization.currentLanguage.rawValue)")
+                                .font(.subheadline)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption2)
+                        }
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial, in: Capsule())
                     }
                     
                     // Secure notice

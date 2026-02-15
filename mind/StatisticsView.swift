@@ -13,6 +13,7 @@ struct StatisticsView: View {
     @Query private var bookmarks: [Bookmark]
     @Environment(ThemeManager.self) private var themeManager
     @Environment(LocalizationManager.self) private var localization
+    @State private var showingPaywall = false
     
     var totalBookmarks: Int { bookmarks.count }
     var readBookmarks: Int { bookmarks.filter { $0.isRead }.count }
@@ -54,14 +55,28 @@ struct StatisticsView: View {
                     // Quick Overview
                     quickStatsSection
                     
-                    // Activity Chart
+                    // Activity Chart (Premium)
                     if !bookmarks.isEmpty {
-                        activitySection
+                        if PaywallManager.shared.checkFeatureAccess(.advancedStatistics) {
+                            activitySection
+                        } else {
+                            premiumLockedSection(
+                                icon: "chart.bar.fill",
+                                title: localization.localizedString("stats.activity")
+                            )
+                        }
                     }
-                    
-                    // Category Breakdown
+
+                    // Category Breakdown (Premium)
                     if !categoryStats.isEmpty {
-                        categorySection
+                        if PaywallManager.shared.checkFeatureAccess(.advancedStatistics) {
+                            categorySection
+                        } else {
+                            premiumLockedSection(
+                                icon: "folder.fill",
+                                title: localization.localizedString("stats.categories")
+                            )
+                        }
                     }
                 }
                 .padding()
@@ -75,7 +90,40 @@ struct StatisticsView: View {
             )
             .navigationTitle(localization.localizedString("stats.title"))
             .navigationBarTitleDisplayMode(.large)
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
+            }
         }
+    }
+
+    // MARK: - Premium Locked Section
+
+    private func premiumLockedSection(icon: String, title: String) -> some View {
+        Button(action: { showingPaywall = true }) {
+            VStack(spacing: 12) {
+                Image(systemName: "lock.fill")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Image(systemName: icon)
+                        .foregroundStyle(themeManager.currentTheme.primaryColor)
+                    Text(title)
+                        .font(.headline)
+                }
+                Text(localization.localizedString("settings.upgrade"))
+                    .font(.caption)
+                    .foregroundStyle(themeManager.currentTheme.primaryColor)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 32)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.08), radius: 10, y: 5)
+        }
+        .buttonStyle(.plain)
     }
     
     

@@ -40,77 +40,35 @@ final class URLPreviewManager {
             throw URLError(.cannotDecodeContentData)
         }
         
-        // Parse Open Graph and Meta tags
+        // Parse Open Graph and Meta tags (using shared HTMLMetaParser)
         let title = normalizeTitle(
-            extractMetaTag(html: html, property: "og:title")
-                    ?? extractMetaTag(html: html, name: "twitter:title")
-                    ?? extractTitle(html: html)
+            HTMLMetaParser.extractMetaTag(html: html, property: "og:title")
+                    ?? HTMLMetaParser.extractMetaTag(html: html, name: "twitter:title")
+                    ?? HTMLMetaParser.extractTitle(html: html)
         )
         
         let description = normalizeDescription(
-            extractMetaTag(html: html, property: "og:description")
-                          ?? extractMetaTag(html: html, name: "twitter:description")
-                          ?? extractMetaTag(html: html, name: "description")
+            HTMLMetaParser.extractMetaTag(html: html, property: "og:description")
+                          ?? HTMLMetaParser.extractMetaTag(html: html, name: "twitter:description")
+                          ?? HTMLMetaParser.extractMetaTag(html: html, name: "description")
         )
         
-        let imageURL = extractMetaTag(html: html, property: "og:image")
-                      ?? extractMetaTag(html: html, name: "twitter:image")
+        let rawImageURL = HTMLMetaParser.extractMetaTag(html: html, property: "og:image")
+                      ?? HTMLMetaParser.extractMetaTag(html: html, name: "twitter:image")
+        let imageURL = HTMLMetaParser.resolveImageURL(rawImageURL, baseURL: url) ?? rawImageURL
         
         // Favicon
         let faviconURL = extractFavicon(html: html, baseURL: url)
         
         return Preview(
-            title: decodeHTMLEntities(title?.trimmingCharacters(in: .whitespacesAndNewlines)),
-            description: decodeHTMLEntities(description?.trimmingCharacters(in: .whitespacesAndNewlines)),
+            title: HTMLMetaParser.decodeHTMLEntities(title?.trimmingCharacters(in: .whitespacesAndNewlines)),
+            description: HTMLMetaParser.decodeHTMLEntities(description?.trimmingCharacters(in: .whitespacesAndNewlines)),
             imageURL: imageURL,
             faviconURL: faviconURL
         )
     }
     
-    // MARK: - HTML Parsing
-    
-    private func decodeHTMLEntities(_ string: String?) -> String? {
-        guard let string = string else { return nil }
-        
-        let entities = [
-            "&amp;": "&",
-            "&lt;": "<",
-            "&gt;": ">",
-            "&quot;": "\"",
-            "&apos;": "'",
-            "&#39;": "'",
-            "&ldquo;": "\"",
-            "&rdquo;": "\"",
-            "&lsquo;": "'",
-            "&rsquo;": "'",
-            "&nbsp;": " "
-        ]
-        
-        var result = string
-        for (entity, character) in entities {
-            result = result.replacingOccurrences(of: entity, with: character)
-        }
-        
-        return result
-    }
-    
-    private func extractTitle(html: String) -> String? {
-        // Extract <title>...</title>
-        let pattern = "<title[^>]*>([^<]+)</title>"
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
-            return nil
-        }
-        
-        let nsString = html as NSString
-        let results = regex.matches(in: html, range: NSRange(location: 0, length: nsString.length))
-        
-        guard let match = results.first,
-              match.numberOfRanges > 1 else {
-            return nil
-        }
-        
-        return nsString.substring(with: match.range(at: 1))
-    }
+    // MARK: - HTML Parsing (HTMLMetaParser used for shared logic)
 
     private func normalizeTitle(_ title: String?) -> String? {
         guard let title = title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else {
@@ -128,32 +86,6 @@ final class URLPreviewManager {
             return nil
         }
         return description
-    }
-    
-    private func extractMetaTag(html: String, property: String? = nil, name: String? = nil) -> String? {
-        var pattern = "<meta[^>]*(?:property|name)=[\"']"
-        
-        if let property = property {
-            pattern += NSRegularExpression.escapedPattern(for: property)
-        } else if let name = name {
-            pattern += NSRegularExpression.escapedPattern(for: name)
-        }
-        
-        pattern += "[\"'][^>]*content=[\"']([^\"']+)[\"'][^>]*>"
-        
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
-            return nil
-        }
-        
-        let nsString = html as NSString
-        let results = regex.matches(in: html, range: NSRange(location: 0, length: nsString.length))
-        
-        guard let match = results.first,
-              match.numberOfRanges > 1 else {
-            return nil
-        }
-        
-        return nsString.substring(with: match.range(at: 1))
     }
     
     private func extractFavicon(html: String, baseURL: URL) -> String? {

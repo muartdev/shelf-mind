@@ -86,16 +86,24 @@ final class PaywallManager {
     }
     
     // MARK: - Free Tier Limits
-    
+
     static let freeBookmarkLimit = 10
-    
+    static let freeURLPreviewLimit = 5
+
     func canAddBookmark(currentCount: Int) -> Bool {
         if isPremium {
             return true
         }
         return currentCount < Self.freeBookmarkLimit
     }
-    
+
+    func canUseURLPreview(currentCount: Int) -> Bool {
+        if isPremium {
+            return true
+        }
+        return currentCount < Self.freeURLPreviewLimit
+    }
+
     func checkFeatureAccess(_ feature: PremiumFeature) -> Bool {
         return isPremium
     }
@@ -106,9 +114,13 @@ final class PaywallManager {
         do {
             let productIDs: [ProductID] = [.monthly, .yearly, .lifetime]
             products = try await Product.products(for: productIDs.map { $0.rawValue })
+            #if DEBUG
             print("✅ Loaded \(products.count) products")
+            #endif
         } catch {
+            #if DEBUG
             print("❌ Failed to load products: \(error)")
+            #endif
             purchaseError = "Failed to load products"
         }
     }
@@ -133,13 +145,19 @@ final class PaywallManager {
             // Finish the transaction
             await transaction.finish()
             
+            #if DEBUG
             print("✅ Purchase successful")
-            
+            #endif
+
         case .userCancelled:
+            #if DEBUG
             print("⚠️ User cancelled purchase")
-            
+            #endif
+
         case .pending:
+            #if DEBUG
             print("⏳ Purchase pending")
+            #endif
             
         @unknown default:
             break
@@ -156,9 +174,13 @@ final class PaywallManager {
         do {
             try await AppStore.sync()
             await updatePremiumStatus()
+            #if DEBUG
             print("✅ Purchases restored")
+            #endif
         } catch {
+            #if DEBUG
             print("❌ Restore failed: \(error)")
+            #endif
             purchaseError = "Failed to restore purchases"
             throw error
         }
@@ -216,18 +238,24 @@ final class PaywallManager {
                             expirationDate: transaction.expirationDate,
                             purchaseDate: transaction.purchaseDate
                         )
+                        #if DEBUG
                         print("✅ Premium status synced to Supabase")
+                        #endif
                     } catch {
+                        #if DEBUG
                         print("❌ Failed to sync premium status to Supabase: \(error)")
+                        #endif
                     }
                 }
             }
         }
         
+        #if DEBUG
         print(isPremium ? "✅ User is Premium (\(isLifetime ? "Lifetime" : "Subscription"))" : "⚠️ User is Free")
         if let expiration = premiumExpirationDate {
             print("📅 Expires: \(expiration)")
         }
+        #endif
     }
     
     func setPremiumFromDatabase(isPremium: Bool, expirationDate: Date?, purchaseDate: Date?) {
@@ -256,7 +284,9 @@ final class PaywallManager {
                     // Finish the transaction
                     await transaction.finish()
                 } catch {
+                    #if DEBUG
                     print("❌ Transaction verification failed: \(error)")
+                    #endif
                 }
             }
         }

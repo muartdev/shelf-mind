@@ -156,7 +156,8 @@ final class AuthManager {
                 needsEmailConfirmation = false
                 pendingEmail = nil
                 infoKey = nil
-                
+                saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
+
                 // Sync premium status from DB
                 PaywallManager.shared.setPremiumFromDatabase(
                     isPremium: user.isPremium,
@@ -185,6 +186,10 @@ final class AuthManager {
         UserDefaults.standard.set(userId, forKey: "userId")
         UserDefaults.standard.set(email, forKey: "userEmail")
         UserDefaults.standard.set(name, forKey: "userName")
+        // Sync to app group for Share Extension
+        let group = UserDefaults(suiteName: "group.com.muartdev.mind")
+        group?.set(true, forKey: "isAuthenticated")
+        group?.set(userId, forKey: "userId")
     }
     
     private func clearSession() {
@@ -192,6 +197,10 @@ final class AuthManager {
         UserDefaults.standard.removeObject(forKey: "userId")
         UserDefaults.standard.removeObject(forKey: "userEmail")
         UserDefaults.standard.removeObject(forKey: "userName")
+        // Sync to app group for Share Extension
+        let group = UserDefaults(suiteName: "group.com.muartdev.mind")
+        group?.removeObject(forKey: "isAuthenticated")
+        group?.removeObject(forKey: "userId")
     }
 
     func resendConfirmation() async {

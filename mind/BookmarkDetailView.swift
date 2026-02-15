@@ -13,6 +13,7 @@ struct BookmarkDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(ThemeManager.self) private var themeManager
+    @Environment(LocalizationManager.self) private var localization
     
     let bookmark: Bookmark
     
@@ -21,6 +22,8 @@ struct BookmarkDetailView: View {
     @State private var editedURL: String
     @State private var editedNotes: String
     @State private var editedCategory: Category
+    @State private var editedTags: [String]
+    @State private var newTag = ""
     @State private var showingDeleteConfirmation = false
     @State private var showingReminderSheet = false
     @State private var reminderDate = Date()
@@ -32,6 +35,7 @@ struct BookmarkDetailView: View {
         _editedURL = State(initialValue: bookmark.url)
         _editedNotes = State(initialValue: bookmark.notes)
         _editedCategory = State(initialValue: Category.fromStoredValue(bookmark.category) ?? .general)
+        _editedTags = State(initialValue: bookmark.tags)
     }
     
     var body: some View {
@@ -58,7 +62,7 @@ struct BookmarkDetailView: View {
                     .padding()
                 }
             }
-            .navigationTitle(isEditing ? "Edit Bookmark" : "Bookmark")
+            .navigationTitle(isEditing ? localization.localizedString("detail.edit") : localization.localizedString("detail.view"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 toolbarContent
@@ -67,7 +71,7 @@ struct BookmarkDetailView: View {
                 NavigationStack {
                     ScrollView {
                         VStack(spacing: 20) {
-                            DatePicker("Select Time", selection: $reminderDate, displayedComponents: [.date, .hourAndMinute])
+                            DatePicker(localization.localizedString("detail.select.time"), selection: $reminderDate, displayedComponents: [.date, .hourAndMinute])
                                 .datePickerStyle(.graphical)
                                 .padding()
                                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
@@ -75,7 +79,7 @@ struct BookmarkDetailView: View {
                         .padding()
                     }
                     .safeAreaInset(edge: .bottom) {
-                        Button("Set Reminder") {
+                        Button(localization.localizedString("detail.set.reminder")) {
                             scheduleNotification()
                         }
                         .buttonStyle(PrimaryButtonStyle(theme: themeManager.currentTheme))
@@ -84,11 +88,11 @@ struct BookmarkDetailView: View {
                         .padding(.bottom, 16)
                         .background(.ultraThinMaterial)
                     }
-                    .navigationTitle("Set Reminder")
+                    .navigationTitle(localization.localizedString("detail.set.reminder"))
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") { showingReminderSheet = false }
+                            Button(localization.localizedString("common.cancel")) { showingReminderSheet = false }
                         }
                     }
                 }
@@ -101,16 +105,16 @@ struct BookmarkDetailView: View {
                 }
             }
             .confirmationDialog(
-                "Delete Bookmark",
+                localization.localizedString("detail.delete.confirm"),
                 isPresented: $showingDeleteConfirmation,
                 titleVisibility: .visible
             ) {
-                Button("Delete", role: .destructive) {
+                Button(localization.localizedString("common.delete"), role: .destructive) {
                     deleteBookmark()
                 }
-                Button("Cancel", role: .cancel) { }
+                Button(localization.localizedString("common.cancel"), role: .cancel) { }
             } message: {
-                Text("Are you sure you want to delete this bookmark? This action cannot be undone.")
+                Text(localization.localizedString("detail.delete.message"))
             }
         }
     }
@@ -128,7 +132,7 @@ struct BookmarkDetailView: View {
             
             // Title
             VStack(alignment: .leading, spacing: 8) {
-                Text("Title")
+                Text(localization.localizedString("detail.title"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(bookmark.title)
@@ -141,7 +145,7 @@ struct BookmarkDetailView: View {
             
             // URL
             VStack(alignment: .leading, spacing: 8) {
-                Text("URL")
+                Text(localization.localizedString("detail.url"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(bookmark.url)
@@ -155,11 +159,33 @@ struct BookmarkDetailView: View {
             // Notes
             if !bookmark.notes.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Notes")
+                    Text(localization.localizedString("detail.notes"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(bookmark.notes)
                         .font(.body)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .detailCardStyle()
+            }
+            
+            // Tags
+            if !bookmark.tags.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(localization.localizedString("detail.tags"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    FlowLayout(spacing: 8) {
+                        ForEach(bookmark.tags, id: \.self) { tag in
+                            Text("#\(tag)")
+                                .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(.blue.opacity(0.1), in: Capsule())
+                                .foregroundStyle(.blue)
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
@@ -171,7 +197,7 @@ struct BookmarkDetailView: View {
                 HStack {
                     Image(systemName: "calendar")
                         .foregroundStyle(.secondary)
-                    Text("Added")
+                    Text(localization.localizedString("detail.added"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -182,7 +208,7 @@ struct BookmarkDetailView: View {
                 HStack {
                     Image(systemName: "clock")
                         .foregroundStyle(.secondary)
-                    Text("Time")
+                    Text(localization.localizedString("detail.time"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -200,14 +226,14 @@ struct BookmarkDetailView: View {
     private var editingView: some View {
         VStack(spacing: 16) {
             InputField(
-                title: "Title",
+                title: localization.localizedString("detail.title"),
                 icon: "text.quote",
                 text: $editedTitle,
-                placeholder: "Enter bookmark title"
+                placeholder: localization.localizedString("add.title.placeholder")
             )
             
             InputField(
-                title: "URL",
+                title: localization.localizedString("detail.url"),
                 icon: "link",
                 text: $editedURL,
                 placeholder: "https://example.com"
@@ -216,10 +242,10 @@ struct BookmarkDetailView: View {
             .keyboardType(.URL)
             
             InputField(
-                title: "Notes",
+                title: localization.localizedString("detail.notes"),
                 icon: "note.text",
                 text: $editedNotes,
-                placeholder: "Add notes (optional)",
+                placeholder: localization.localizedString("add.notes.placeholder"),
                 axis: .vertical,
                 lineLimit: 4
             )
@@ -229,7 +255,7 @@ struct BookmarkDetailView: View {
                 HStack {
                     Image(systemName: "folder")
                         .foregroundStyle(.secondary)
-                    Text("Category")
+                    Text(localization.localizedString("add.category"))
                         .font(.headline)
                 }
                 
@@ -237,7 +263,53 @@ struct BookmarkDetailView: View {
             }
             .padding()
             .detailCardStyle()
+
+            // Tags
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "tag")
+                        .foregroundStyle(.secondary)
+                    Text(localization.localizedString("detail.tags"))
+                        .font(.headline)
+                }
+                
+                HStack(spacing: 12) {
+                    TextField(localization.localizedString("detail.add.tag"), text: $newTag)
+                        .textFieldStyle(.plain)
+                        .textInputAutocapitalization(.never)
+                        .onSubmit(addTag)
+                    
+                    Button(action: addTag) {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(themeManager.currentTheme.primaryColor)
+                            .font(.title2)
+                    }
+                }
+                .padding(12)
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                
+                if !editedTags.isEmpty {
+                    FlowLayout(spacing: 8) {
+                        ForEach(editedTags, id: \.self) { tag in
+                            TagView(tag: tag, onDelete: { removeTag(tag) })
+                        }
+                    }
+                }
+            }
+            .padding()
+            .detailCardStyle()
         }
+    }
+    
+    private func addTag() {
+        let trimmedTag = newTag.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmedTag.isEmpty, !editedTags.contains(trimmedTag) else { return }
+        editedTags.append(trimmedTag)
+        newTag = ""
+    }
+    
+    private func removeTag(_ tag: String) {
+        editedTags.removeAll { $0 == tag }
     }
     
     @ViewBuilder
@@ -259,28 +331,28 @@ struct BookmarkDetailView: View {
     private var actionButtonsSection: some View {
         VStack(spacing: 16) {
             actionButton(
-                title: bookmark.isRead ? "Mark as Unread" : "Mark as Read",
+                title: bookmark.isRead ? localization.localizedString("detail.mark.unread") : localization.localizedString("detail.mark.read"),
                 icon: bookmark.isRead ? "circle" : "checkmark.circle",
                 color: .green,
                 action: toggleRead
             )
             
             actionButton(
-                title: "Open in Browser",
+                title: localization.localizedString("detail.open.browser"),
                 icon: "safari",
                 color: .blue,
                 action: openURL
             )
             
             actionButton(
-                title: "Share",
+                title: localization.localizedString("detail.share"),
                 icon: "square.and.arrow.up",
                 color: .orange,
                 action: shareBookmark
             )
             
             actionButton(
-                title: "Set Reminder",
+                title: localization.localizedString("detail.set.reminder"),
                 icon: "bell",
                 color: .purple,
                 action: { showingReminderSheet = true }
@@ -336,7 +408,7 @@ struct BookmarkDetailView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
-            Button(isEditing ? "Cancel" : "Done") {
+            Button(isEditing ? localization.localizedString("common.cancel") : localization.localizedString("common.done")) {
                 if isEditing {
                     cancelEditing()
                 } else {
@@ -347,20 +419,20 @@ struct BookmarkDetailView: View {
         
         ToolbarItem(placement: .primaryAction) {
             if isEditing {
-                Button("Save") {
+                Button(localization.localizedString("common.save")) {
                     saveChanges()
                 }
                 .bold()
             } else {
                 Menu {
                     Button(action: { isEditing = true }) {
-                        Label("Edit", systemImage: "pencil")
+                        Label(localization.localizedString("detail.edit"), systemImage: "pencil")
                     }
                     
                     Divider()
                     
                     Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
-                        Label("Delete", systemImage: "trash")
+                        Label(localization.localizedString("common.delete"), systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -411,7 +483,9 @@ struct BookmarkDetailView: View {
                     showingReminderSheet = false
                 }
             } else if let error = error {
+                #if DEBUG
                 print("Notification permission error: \(error.localizedDescription)")
+                #endif
             }
         }
     }
@@ -421,6 +495,9 @@ struct BookmarkDetailView: View {
         bookmark.url = editedURL
         bookmark.notes = editedNotes
         bookmark.category = editedCategory.storageKey
+        bookmark.tags = editedTags
+
+        try? modelContext.save()
 
         Task {
             try? await SupabaseManager.shared.updateBookmark(bookmark)
@@ -436,6 +513,7 @@ struct BookmarkDetailView: View {
         editedURL = bookmark.url
         editedNotes = bookmark.notes
         editedCategory = Category.fromStoredValue(bookmark.category) ?? .general
+        editedTags = bookmark.tags
         
         withAnimation(.smooth) {
             isEditing = false
@@ -506,4 +584,5 @@ struct ShareSheet: UIViewControllerRepresentable {
     return BookmarkDetailView(bookmark: bookmark)
         .modelContainer(container)
         .environment(ThemeManager())
+        .environment(LocalizationManager.shared)
 }

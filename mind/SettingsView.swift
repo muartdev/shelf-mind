@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import StoreKit
+import UserNotifications
 
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
@@ -16,8 +17,17 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var bookmarks: [Bookmark]
     
-    @State private var notificationsEnabled = true
-    @State private var reminderTime = Date()
+    @State private var notificationsEnabled = UserDefaults.standard.bool(forKey: "notificationsEnabled")
+    @State private var reminderTime = {
+        if let saved = UserDefaults.standard.object(forKey: "reminderTime") as? Date {
+            return saved
+        }
+        // Default to 9:00 AM
+        var components = DateComponents()
+        components.hour = 9
+        components.minute = 0
+        return Calendar.current.date(from: components) ?? Date()
+    }()
     @State private var showingDeleteConfirmation = false
     @State private var showingDeleteAccountConfirmation = false
     @State private var showingPaywall = false
@@ -110,20 +120,29 @@ struct SettingsView: View {
                             Text(localization.localizedString("settings.notifications"))
                                 .font(.headline)
                                 .foregroundStyle(.secondary)
-                            
+
                             Toggle(localization.localizedString("settings.enable.notifications"), isOn: $notificationsEnabled)
-                            
+                                .onChange(of: notificationsEnabled) { _, newValue in
+                                    UserDefaults.standard.set(newValue, forKey: "notificationsEnabled")
+                                    if newValue {
+                                        requestNotificationPermission()
+                                    } else {
+                                        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+                                    }
+                                    syncNotificationSettingsToSupabase()
+                                }
+
                             if notificationsEnabled {
                                 DatePicker(localization.localizedString("settings.daily.reminder"), selection: $reminderTime, displayedComponents: .hourAndMinute)
+                                    .onChange(of: reminderTime) { _, newValue in
+                                        UserDefaults.standard.set(newValue, forKey: "reminderTime")
+                                        scheduleDailyReminder()
+                                        syncNotificationSettingsToSupabase()
+                                    }
                             }
                         }
                         .padding()
                         .settingsCardStyle()
-                        
-                        // Language Section (moved here)
-                        languageSection
-                        
-
                         
                         // Data Management
                         VStack(spacing: 0) {
@@ -151,12 +170,57 @@ struct SettingsView: View {
                             Text(localization.localizedString("settings.about"))
                                 .font(.headline)
                                 .foregroundStyle(.secondary)
-                            
+
+                            HStack {
+                                Label(localization.localizedString("settings.language"), systemImage: "globe")
+                                Spacer()
+                                Picker("", selection: Binding(
+                                    get: { localization.currentLanguage },
+                                    set: { newLang in
+                                        withAnimation(.smooth) {
+                                            LocalizationManager.shared.currentLanguage = newLang
+                                        }
+                                    }
+                                )) {
+                                    ForEach(LocalizationManager.AppLanguage.allCases) { language in
+                                        Text("\(language.flag) \(language.rawValue)").tag(language)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .tint(.secondary)
+                            }
+
+                            Divider()
+
                             HStack {
                                 Text(localization.localizedString("settings.version"))
                                 Spacer()
                                 Text(appVersion)
                                     .foregroundStyle(.secondary)
+                            }
+
+                            Divider()
+
+                            Link(destination: URL(string: "https://muartdev.github.io/mindshelf-privacy/")!) {
+                                HStack {
+                                    Label(localization.localizedString("settings.privacy.policy"), systemImage: "hand.raised.fill")
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+
+                            Divider()
+
+                            Link(destination: URL(string: "https://muartdev.github.io/mindshelf-privacy/")!) {
+                                HStack {
+                                    Label(localization.localizedString("settings.terms"), systemImage: "doc.text.fill")
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                         .padding()
@@ -208,54 +272,6 @@ struct SettingsView: View {
     }
     
     // MARK: - Premium Section
-    
-    private var languageSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(localization.localizedString("settings.language"))
-                .font(.headline)
-                .foregroundStyle(.secondary)
-            
-            HStack(spacing: 12) {
-                ForEach(LocalizationManager.AppLanguage.allCases) { language in
-                    Button(action: {
-                        withAnimation(.smooth) {
-                            LocalizationManager.shared.currentLanguage = language
-                        }
-                    }) {
-                        HStack(spacing: 8) {
-                            Text(language.flag)
-                                .font(.title2)
-                            Text(language.rawValue)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            LocalizationManager.shared.currentLanguage == language
-                                ? .ultraThinMaterial
-                                : .thinMaterial,
-                            in: RoundedRectangle(cornerRadius: 12)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(
-                                    LocalizationManager.shared.currentLanguage == language
-                                        ? themeManager.currentTheme.primaryColor
-                                        : .white.opacity(0.2),
-                                    lineWidth: LocalizationManager.shared.currentLanguage == language ? 2 : 1
-                                )
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .padding()
-        .settingsCardStyle()
-    }
-    
-
     
     private var premiumSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -494,12 +510,66 @@ struct SettingsView: View {
     }
     
     private func deleteAllBookmarks() {
+        let idsToDelete = bookmarks.map(\.id)
         for bookmark in bookmarks {
             modelContext.delete(bookmark)
         }
         try? modelContext.save()
+
+        // Sync deletion to Supabase
+        if authManager.currentUser != nil {
+            Task {
+                for id in idsToDelete {
+                    try? await SupabaseManager.shared.deleteBookmark(id: id)
+                }
+            }
+        }
     }
     
+    private func syncNotificationSettingsToSupabase() {
+        guard let userId = authManager.currentUser?.id else { return }
+        Task {
+            try? await SupabaseManager.shared.updateUserProfile(
+                userId: userId,
+                notificationsEnabled: notificationsEnabled,
+                reminderTime: reminderTime
+            )
+        }
+    }
+
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+            DispatchQueue.main.async {
+                if granted {
+                    scheduleDailyReminder()
+                } else {
+                    notificationsEnabled = false
+                    UserDefaults.standard.set(false, forKey: "notificationsEnabled")
+                }
+            }
+        }
+    }
+
+    private func scheduleDailyReminder() {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["dailyReminder"])
+
+        let content = UNMutableNotificationContent()
+        content.title = "MindShelf"
+        content.body = localization.localizedString("notification.daily.body")
+        content.sound = .default
+
+        let calendar = Calendar.current
+        var dateComponents = DateComponents()
+        dateComponents.hour = calendar.component(.hour, from: reminderTime)
+        dateComponents.minute = calendar.component(.minute, from: reminderTime)
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        let request = UNNotificationRequest(identifier: "dailyReminder", content: content, trigger: trigger)
+
+        center.add(request)
+    }
+
     private func deleteAccount() {
         Task {
             // 1. Clear local bookmarks if needed (though sign out clears access)

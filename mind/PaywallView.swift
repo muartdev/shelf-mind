@@ -276,12 +276,23 @@ struct PaywallView: View {
             }
             .font(.subheadline)
             .foregroundStyle(.secondary)
-            
+
             Text(localization.localizedString("paywall.cancel.anytime"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
+
+            HStack(spacing: 16) {
+                Link(localization.localizedString("settings.privacy.policy"), destination: URL(string: "https://muartdev.github.io/mindshelf-privacy/")!)
+
+                Text("|")
+                    .foregroundStyle(.secondary.opacity(0.5))
+
+                Link(localization.localizedString("settings.terms"), destination: URL(string: "https://muartdev.github.io/mindshelf-privacy/")!)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
     }
     
@@ -299,7 +310,9 @@ struct PaywallView: View {
                 try await paywall.purchase(product)
                 dismiss()
             } catch {
+                #if DEBUG
                 print("❌ Purchase failed: \(error)")
+                #endif
                 errorMessage = localization.localizedString("paywall.failed")
             }
         }
@@ -312,7 +325,9 @@ struct PaywallView: View {
                 try await PaywallManager.shared.restorePurchases()
                 dismiss()
             } catch {
+                #if DEBUG
                 print("❌ Restore failed: \(error)")
+                #endif
                 errorMessage = localization.localizedString("paywall.failed")
             }
         }

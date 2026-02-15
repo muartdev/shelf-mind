@@ -88,7 +88,11 @@ struct AddBookmarkView: View {
                         .font(.body)
                         .onChange(of: url) { oldValue, newValue in
                             if newValue != oldValue && !newValue.isEmpty {
-                                loadURLPreview(for: newValue)
+                                if PaywallManager.shared.canUseURLPreview(currentCount: bookmarks.count) {
+                                    loadURLPreview(for: newValue)
+                                } else {
+                                    showingPaywall = true
+                                }
                             }
                         }
                     
@@ -115,9 +119,46 @@ struct AddBookmarkView: View {
                 )
             }
             
-            // Preview Card (if available)
+            // Preview Card (if available) or Premium upsell
             if previewTitle != nil {
                 previewCard
+            } else if !url.isEmpty && !PaywallManager.shared.canUseURLPreview(currentCount: bookmarks.count) {
+                Button(action: { showingPaywall = true }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "sparkles")
+                            .font(.title3)
+                            .foregroundStyle(.yellow)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(localization.localizedString("preview.premium.title"))
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                            Text(localization.localizedString("preview.premium.desc"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(14)
+                    .background(
+                        LinearGradient(
+                            colors: [.yellow.opacity(0.1), .orange.opacity(0.1)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        in: RoundedRectangle(cornerRadius: 12)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(.yellow.opacity(0.3), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
             }
             
             // Title field
@@ -215,7 +256,7 @@ struct AddBookmarkView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "sparkles")
                             .font(.caption2)
-                        Text("Tap to use preview")
+                        Text(localization.localizedString("add.preview.tap"))
                             .font(.caption)
                     }
                     .foregroundStyle(.secondary)
@@ -270,7 +311,7 @@ struct AddBookmarkView: View {
     // MARK: - Category Section
     
     private var categorySection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Image(systemName: "folder")
                     .font(.subheadline)
@@ -278,24 +319,37 @@ struct AddBookmarkView: View {
                 Text(localization.localizedString("add.category"))
                     .font(.headline)
             }
-            
-            categoryGrid
+
+            Menu {
+                ForEach(Category.allCases) { category in
+                    Button(action: { selectedCategory = category }) {
+                        Label(category.rawValue, systemImage: category.icon)
+                    }
+                }
+            } label: {
+                HStack {
+                    Image(systemName: selectedCategory.icon)
+                        .foregroundStyle(selectedCategory.color)
+                        .font(.body)
+                    Text(selectedCategory.rawValue)
+                        .font(.body)
+                        .fontWeight(.medium)
+                    Spacer()
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(14)
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
         }
         .padding(20)
         .formGlassStyle()
-    }
-    
-    @ViewBuilder
-    private var categoryGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            ForEach(Category.allCases) { category in
-                CategoryButton(
-                    category: category,
-                    isSelected: selectedCategory == category,
-                    action: { selectedCategory = category }
-                )
-            }
-        }
     }
     
     // MARK: - Tags Section
@@ -306,13 +360,13 @@ struct AddBookmarkView: View {
                 Image(systemName: "tag")
                     .font(.subheadline)
                     .foregroundStyle(themeManager.currentTheme.primaryColor)
-                Text("Tags")
+                Text(localization.localizedString("detail.tags"))
                     .font(.headline)
             }
             
             // Tag input
             HStack(spacing: 12) {
-                TextField("Add tag", text: $newTag)
+                TextField(localization.localizedString("detail.add.tag"), text: $newTag)
                     .textFieldStyle(.plain)
                     .textInputAutocapitalization(.never)
                     .onSubmit(addTag)
@@ -391,26 +445,32 @@ struct AddBookmarkView: View {
         
         // Validation
         guard !title.isEmpty else {
-            validationMessage = "Please enter a title"
+            validationMessage = localization.localizedString("add.error.title")
             showingValidationError = true
             return
         }
         
         guard !url.isEmpty else {
-            validationMessage = "Please enter a URL"
+            validationMessage = localization.localizedString("add.error.url")
             showingValidationError = true
             return
         }
         
         guard URL(string: url) != nil else {
-            validationMessage = "Please enter a valid URL"
+            validationMessage = localization.localizedString("add.error.url.invalid")
             showingValidationError = true
             return
         }
 
         let dedupeKey = Bookmark.dedupeKey(url)
-        if bookmarks.contains(where: { Bookmark.dedupeKey($0.url) == dedupeKey }) {
-            validationMessage = localization.localizedString("add.error.duplicate")
+        if let existing = bookmarks.first(where: { Bookmark.dedupeKey($0.url) == dedupeKey }) {
+            let dateStr = existing.dateAdded.relativeDisplayString(
+                language: localization.currentLanguage.code
+            )
+            validationMessage = String(
+                format: localization.localizedString("add.error.duplicate_with_date"),
+                dateStr
+            )
             showingValidationError = true
             return
         }
@@ -435,15 +495,21 @@ struct AddBookmarkView: View {
             defer { isSaving = false }
             
             guard let userId = authManager.currentUser?.id else {
+                #if DEBUG
                 print("❌ No user ID found")
+                #endif
                 return
             }
             
             do {
                 try await SupabaseManager.shared.createBookmark(bookmark, userId: userId)
+                #if DEBUG
                 print("✅ Bookmark saved to Supabase")
+                #endif
             } catch {
+                #if DEBUG
                 print("❌ Failed to save bookmark to Supabase: \(error)")
+                #endif
                 // Still saved locally; queued for sync if possible
             }
         }
@@ -493,7 +559,9 @@ struct AddBookmarkView: View {
                     self.thumbnailURL = preview.imageURL
                 }
             } catch {
+                #if DEBUG
                 print("❌ Failed to load preview: \(error.localizedDescription)")
+                #endif
             }
         }
     }

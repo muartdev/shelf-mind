@@ -18,6 +18,8 @@ final class LocalizationManager {
     var currentLanguage: AppLanguage {
         didSet {
             UserDefaults.standard.set(currentLanguage.code, forKey: "app_language")
+            // Sync to app group for Share Extension
+            UserDefaults(suiteName: "group.com.muartdev.mind")?.set(currentLanguage.code, forKey: "app_language")
             onLanguageChange?(currentLanguage)
         }
     }
@@ -44,12 +46,13 @@ final class LocalizationManager {
     }
     
     private init() {
-        // Load saved language
-        if let savedCode = UserDefaults.standard.string(forKey: "app_language"),
-           let language = AppLanguage.allCases.first(where: { $0.code == savedCode }) {
+        // Load saved language (check app group first for Share Extension consistency)
+        let savedCode = UserDefaults(suiteName: "group.com.muartdev.mind")?.string(forKey: "app_language")
+            ?? UserDefaults.standard.string(forKey: "app_language")
+        if let code = savedCode,
+           let language = AppLanguage.allCases.first(where: { $0.code == code }) {
             self.currentLanguage = language
         } else {
-            // Default to English
             self.currentLanguage = .english
         }
     }
@@ -85,6 +88,15 @@ struct LocalizedStrings {
         "main.empty.title": "No Bookmarks Yet",
         "main.empty.message": "Start saving your favorite links",
         "main.filter.all": "All",
+        "main.filter.unread": "Unread",
+        "main.empty.filtered.title": "No Bookmarks in This Category",
+        "main.empty.filtered.message": "Try adding a bookmark with this category or clear the filter to see all",
+        "main.empty.unread.title": "All Caught Up!",
+        "main.empty.unread.message": "You've read all your bookmarks. Great job!",
+        "main.empty.default.title": "No Bookmarks Yet",
+        "main.empty.default.message": "Save interesting content from X, articles, and videos to read later",
+        "main.clear.filters": "Clear Filters",
+        "main.add.first": "Add Your First Bookmark",
         
         // Add Bookmark
         "add.title": "Add Bookmark",
@@ -255,8 +267,32 @@ struct LocalizedStrings {
         "auth.error.rate_limit": "Too many requests. Please wait and try again.",
         "auth.error.resend_wait": "Please wait before requesting another code.",
         
+        // Bookmark Detail
+        "detail.title": "Title",
+        "detail.url": "URL",
+        "detail.notes": "Notes",
+        "detail.tags": "Tags",
+        "detail.add.tag": "Add tag",
+        "detail.edit": "Edit Bookmark",
+        "detail.view": "Bookmark",
+        "detail.delete.confirm": "Delete Bookmark",
+        "detail.delete.message": "Are you sure you want to delete this bookmark? This action cannot be undone.",
+        "detail.mark.read": "Mark as Read",
+        "detail.mark.unread": "Mark as Unread",
+        "detail.open.browser": "Open in Browser",
+        "detail.share": "Share",
+        "detail.set.reminder": "Set Reminder",
+        "detail.select.time": "Select Time",
+        "detail.added": "Added",
+        "detail.time": "Time",
+        
         // Add Bookmark Errors
+        "add.preview.tap": "Tap to use preview",
+        "add.error.title": "Please enter a title",
+        "add.error.url": "Please enter a URL",
+        "add.error.url.invalid": "Please enter a valid URL",
         "add.error.duplicate": "This URL is already saved.",
+        "add.error.duplicate_with_date": "This URL is already saved (%@).",
         
         // Premium Management
         "settings.premium.manage": "Manage Subscription",
@@ -267,8 +303,19 @@ struct LocalizedStrings {
         "settings.premium.expiration.desc": "You have access to all features until this date.",
         "settings.premium.cancellation.title": "How to Cancel?",
         "settings.premium.cancellation.desc": "You can manage or cancel your subscription at any time through your App Store account settings.",
+
+        // Privacy & Terms
+        "settings.privacy.policy": "Privacy Policy",
+        "settings.terms": "Terms of Service",
+
+        // Notifications
+        "notification.daily.body": "Check out your bookmarks and catch up on your reading!",
+
+        // URL Preview Premium Upsell
+        "preview.premium.title": "URL Preview is a Premium feature",
+        "preview.premium.desc": "Upgrade to get automatic title & image extraction for all bookmarks",
     ]
-    
+
     // MARK: - Turkish
     
     private static let turkish: [String: String] = [
@@ -283,6 +330,15 @@ struct LocalizedStrings {
         "main.empty.title": "Henüz Yer İmi Yok",
         "main.empty.message": "Favori bağlantılarını kaydetmeye başla",
         "main.filter.all": "Tümü",
+        "main.filter.unread": "Okunmamış",
+        "main.empty.filtered.title": "Bu Kategoride Yer İmi Yok",
+        "main.empty.filtered.message": "Bu kategoriyle bir yer imi ekleyin veya tümünü görmek için filtreyi temizleyin",
+        "main.empty.unread.title": "Hepsi Tamam!",
+        "main.empty.unread.message": "Tüm yer imlerinizi okudunuz. Harika!",
+        "main.empty.default.title": "Henüz Yer İmi Yok",
+        "main.empty.default.message": "X, makaleler ve videolardan ilginç içerikleri daha sonra okumak için kaydedin",
+        "main.clear.filters": "Filtreleri Temizle",
+        "main.add.first": "İlk Yer İminizi Ekleyin",
         
         // Add Bookmark
         "add.title": "Yer İmi Ekle",
@@ -453,9 +509,33 @@ struct LocalizedStrings {
         "auth.error.rate_limit": "Çok fazla istek yapıldı. Lütfen biraz bekleyip tekrar dene.",
         "auth.error.resend_wait": "Yeni kod istemeden önce biraz beklemelisin.",
         
-        // Add Bookmark Errors
-        "add.error.duplicate": "Bu URL zaten kaydedilmiş.",
+        // Bookmark Detail
+        "detail.title": "Başlık",
+        "detail.url": "URL",
+        "detail.notes": "Notlar",
+        "detail.tags": "Etiketler",
+        "detail.add.tag": "Etiket ekle",
+        "detail.edit": "Yer İmini Düzenle",
+        "detail.view": "Yer İmi",
+        "detail.delete.confirm": "Yer İmini Sil",
+        "detail.delete.message": "Bu yer imini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+        "detail.mark.read": "Okundu Olarak İşaretle",
+        "detail.mark.unread": "Okunmadı Olarak İşaretle",
+        "detail.open.browser": "Tarayıcıda Aç",
+        "detail.share": "Paylaş",
+        "detail.set.reminder": "Hatırlatıcı Ayarla",
+        "detail.select.time": "Zaman Seç",
+        "detail.added": "Eklendi",
+        "detail.time": "Saat",
         
+        // Add Bookmark Errors
+        "add.preview.tap": "Önizlemeyi kullanmak için dokunun",
+        "add.error.title": "Lütfen bir başlık girin",
+        "add.error.url": "Lütfen bir URL girin",
+        "add.error.url.invalid": "Lütfen geçerli bir URL girin",
+        "add.error.duplicate": "Bu URL zaten kaydedilmiş.",
+        "add.error.duplicate_with_date": "Bu URL zaten kaydedilmiş (%@).",
+
         // Premium Management
         "settings.premium.manage": "Aboneliği Yönet",
         "settings.premium.manage.desc": "App Store üzerinden aboneliğinizi dondurun veya iptal edin",
@@ -465,5 +545,16 @@ struct LocalizedStrings {
         "settings.premium.expiration.desc": "Bu tarihe kadar tüm premium özellikleri kullanmaya devam edebilirsiniz.",
         "settings.premium.cancellation.title": "Nasıl İptal Edilir?",
         "settings.premium.cancellation.desc": "Aboneliğinizi istediğiniz zaman App Store hesap ayarlarınız üzerinden yönetebilir veya iptal edebilirsiniz.",
+
+        // Privacy & Terms
+        "settings.privacy.policy": "Gizlilik Politikası",
+        "settings.terms": "Kullanım Koşulları",
+
+        // Notifications
+        "notification.daily.body": "Yer imlerini kontrol et ve okumalarına devam et!",
+
+        // URL Preview Premium Upsell
+        "preview.premium.title": "URL Önizleme Premium özelliği",
+        "preview.premium.desc": "Tüm yer imleri için otomatik başlık ve resim çıkarma özelliğini aç",
     ]
 }

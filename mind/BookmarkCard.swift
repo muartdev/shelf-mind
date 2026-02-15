@@ -14,6 +14,11 @@ struct BookmarkCard: View {
     let bookmark: Bookmark
     var isCompact: Bool = false
     
+    private var displayDomain: String {
+        guard let host = URL(string: bookmark.url)?.host else { return bookmark.url }
+        return host.replacingOccurrences(of: "www.", with: "")
+    }
+
     var body: some View {
         cardContent
             .cardGlassStyle()
@@ -67,11 +72,15 @@ struct BookmarkCard: View {
                 }
             }
             
-            // URL
-            Text(bookmark.url)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            // Domain
+            HStack(spacing: 4) {
+                Image(systemName: "link")
+                    .font(.caption2)
+                Text(displayDomain)
+                    .font(.caption)
+            }
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
             
             // Notes if available
             if !bookmark.notes.isEmpty {
@@ -118,20 +127,28 @@ struct BookmarkCard: View {
     }
     
     // MARK: - Compact Layout (Grid View)
-    
+
     private var compactLayout: some View {
         VStack(spacing: 0) {
             compactImageSection
-            
-            VStack(alignment: .leading, spacing: 8) {
+
+            VStack(alignment: .leading, spacing: 6) {
                 Text(bookmark.title)
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .frame(height: 40, alignment: .topLeading)
-                
+
+                HStack(spacing: 3) {
+                    Image(systemName: "link")
+                        .font(.system(size: 9))
+                    Text(displayDomain)
+                        .font(.caption2)
+                }
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
                 HStack {
                     categoryBadge
                     Spacer()
@@ -141,11 +158,11 @@ struct BookmarkCard: View {
             .padding(12)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 220)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
     }
 
     private var compactImageSection: some View {
-        Group {
+        ZStack {
             if let thumbnailURL = bookmark.thumbnailURL, !thumbnailURL.isEmpty {
                 AsyncImage(url: URL(string: thumbnailURL)) { phase in
                     switch phase {
@@ -153,6 +170,9 @@ struct BookmarkCard: View {
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
+                            .frame(minWidth: 0, maxWidth: .infinity)
+                            .frame(height: 120)
+                            .clipped()
                     case .failure(_), .empty:
                         Rectangle()
                             .fill(Color.gray.opacity(0.1))
