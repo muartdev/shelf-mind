@@ -551,7 +551,18 @@ struct SettingsView: View {
     }
     
     private func signOut() {
+        clearLocalBookmarksOnly()
         authManager.signOut()
+    }
+    
+    /// Clears all bookmarks from local SwiftData (used on sign out so next user sees only their data)
+    private func clearLocalBookmarksOnly() {
+        let descriptor = FetchDescriptor<Bookmark>()
+        let allBookmarks = (try? modelContext.fetch(descriptor)) ?? []
+        for bookmark in allBookmarks {
+            modelContext.delete(bookmark)
+        }
+        try? modelContext.save()
     }
     
     private func deleteAllBookmarks() {

@@ -485,6 +485,11 @@ final class SupabaseManager {
         let data = try? JSONEncoder().encode(ops)
         UserDefaults.standard.set(data, forKey: pendingOpsKey)
     }
+    
+    /// Clears pending operations (call on sign out so they don't sync to the next user)
+    func clearPendingOperations() {
+        savePendingOperations([])
+    }
 }
 
 // MARK: - DTOs (Data Transfer Objects)

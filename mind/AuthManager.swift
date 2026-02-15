@@ -231,6 +231,8 @@ final class AuthManager {
         let group = UserDefaults(suiteName: "group.com.muartdev.mind")
         group?.removeObject(forKey: "isAuthenticated")
         group?.removeObject(forKey: "userId")
+        // Clear pending sync ops so they don't apply to the next user
+        supabase.clearPendingOperations()
     }
 
     func resendConfirmation() async {
