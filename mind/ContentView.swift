@@ -21,9 +21,11 @@ struct ContentView: View {
     @State private var searchText = ""
     @State private var selectedCategory: String?
     @State private var showOnlyUnread = false
+    @State private var showOnlyFavorites = false
     @State private var isLoadingFromSupabase = false
     @State private var viewMode: ViewMode = .list
     @State private var displayLimit = 20
+    @State private var sortOption: SortOption = .dateNewest
     private let pageSize = 20
     
     enum ViewMode {
@@ -31,17 +33,31 @@ struct ContentView: View {
         case grid
     }
     
+    enum SortOption: String, CaseIterable {
+        case dateNewest = "sort.date.newest"
+        case dateOldest = "sort.date.oldest"
+        case titleAZ = "sort.title.az"
+        case titleZA = "sort.title.za"
+        case category = "sort.category"
+        case readFirst = "sort.read.first"
+        case unreadFirst = "sort.unread.first"
+    }
+    
     var filteredBookmarks: [Bookmark] {
         let search = searchText
         let category = selectedCategory
         let unreadOnly = showOnlyUnread
+        let favoritesOnly = showOnlyFavorites
 
-        // Single-pass filter for better performance
-        return bookmarks.filter { bookmark in
-            if let category, bookmark.category != category {
-                return false
+        var result = bookmarks.filter { bookmark in
+            if let cat = category {
+                let bookmarkStorageKey = (Category.fromStoredValue(bookmark.category) ?? .general).storageKey
+                if bookmarkStorageKey != cat { return false }
             }
             if unreadOnly && bookmark.isRead {
+                return false
+            }
+            if favoritesOnly && !bookmark.isFavorite {
                 return false
             }
             if !search.isEmpty {
@@ -52,6 +68,25 @@ struct ContentView: View {
             }
             return true
         }
+        
+        switch sortOption {
+        case .dateNewest:
+            result.sort { $0.dateAdded > $1.dateAdded }
+        case .dateOldest:
+            result.sort { $0.dateAdded < $1.dateAdded }
+        case .titleAZ:
+            result.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
+        case .titleZA:
+            result.sort { $0.title.localizedCompare($1.title) == .orderedDescending }
+        case .category:
+            result.sort { $0.category.localizedCompare($1.category) == .orderedAscending }
+        case .readFirst:
+            result.sort { $0.isRead && !$1.isRead }
+        case .unreadFirst:
+            result.sort { !$0.isRead && $1.isRead }
+        }
+        
+        return result
     }
 
     var paginatedBookmarks: [Bookmark] {
@@ -66,6 +101,20 @@ struct ContentView: View {
         bookmarks.lazy.filter { !$0.isRead }.count
     }
     
+    var favoritesCount: Int {
+        bookmarks.lazy.filter { $0.isFavorite }.count
+    }
+
+    private var widgetDataSignature: String {
+        bookmarks.map { "\($0.id)-\($0.isRead)" }.joined(separator: "|")
+    }
+
+    private func refreshWidgetData() {
+        let unread = bookmarks.filter { !$0.isRead }.count
+        let recent = bookmarks.prefix(5).map(\.title)
+        WidgetDataManager.update(unreadCount: unread, totalCount: bookmarks.count, recentTitles: recent)
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -79,12 +128,12 @@ struct ContentView: View {
                 
                 if filteredBookmarks.isEmpty {
                     EmptyStateView(
-                        icon: selectedCategory != nil || showOnlyUnread ? "tray" : "bookmark.slash",
+                        icon: selectedCategory != nil || showOnlyUnread || showOnlyFavorites ? "tray" : "bookmark.slash",
                         title: emptyStateTitle,
                         message: emptyStateMessage,
-                        buttonTitle: selectedCategory != nil || showOnlyUnread ? localization.localizedString("main.clear.filters") : localization.localizedString("main.add.first"),
+                        buttonTitle: selectedCategory != nil || showOnlyUnread || showOnlyFavorites ? localization.localizedString("main.clear.filters") : localization.localizedString("main.add.first"),
                         action: {
-                            if selectedCategory != nil || showOnlyUnread {
+                            if selectedCategory != nil || showOnlyUnread || showOnlyFavorites {
                                 clearFilters()
                             } else {
                                 showingAddBookmark = true
@@ -96,6 +145,7 @@ struct ContentView: View {
                 }
             }
             .navigationTitle(localization.localizedString("main.title"))
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 toolbarContent
             }
@@ -111,6 +161,8 @@ struct ContentView: View {
                 loadPendingBookmarksFromShareExtension()
                 syncSavedURLsToAppGroup()
             }
+            .onAppear { refreshWidgetData() }
+            .onChange(of: widgetDataSignature) { _, _ in refreshWidgetData() }
             .overlay(alignment: .bottom) {
                 if let error = supabaseManager.lastSyncError {
                     HStack(spacing: 8) {
@@ -146,41 +198,108 @@ struct ContentView: View {
     
     private var bookmarkListView: some View {
         VStack(spacing: 0) {
-                    // Sticky Filter Header - minimal
+            // Sticky Filter Header - minimal
             filterChipsView
                 .padding(.vertical, 10)
                 .padding(.horizontal, 4)
                 .zIndex(1)
-            
-            // Scrollable Content
-            ScrollView {
-                VStack(spacing: 16) {
-                    if viewMode == .list {
-                        listLayout
-                    } else {
-                        gridLayout
-                    }
+
+            if viewMode == .list {
+                // List has its own scroll - do NOT nest inside ScrollView
+                listLayout
+                    .refreshable { await refreshBookmarks() }
+            } else {
+                ScrollView {
+                    gridLayout
+                        .padding()
+                        .padding(.top, 4)
                 }
-                .padding()
-                .padding(.top, 4) // Add a little spacing from the sticky header
-            }
-            .scrollIndicators(.hidden)
-            .refreshable {
-                // Pull to refresh - reload data
-                await refreshBookmarks()
+                .scrollIndicators(.hidden)
+                .refreshable { await refreshBookmarks() }
             }
         }
     }
     
     private var listLayout: some View {
-        LazyVStack(spacing: 16) {
-            ForEach(paginatedBookmarks) { bookmark in
-                BookmarkCard(bookmark: bookmark)
-                    .onTapGesture {
-                        selectedBookmark = bookmark
-                    }
+        VStack(spacing: 0) {
+            List {
+                ForEach(paginatedBookmarks) { bookmark in
+                    BookmarkCard(bookmark: bookmark, onTap: {
+                            selectedBookmark = bookmark
+                        })
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                HapticManager.impact(.medium)
+                                deleteBookmark(bookmark)
+                            } label: {
+                                Label(localization.localizedString("common.delete"), systemImage: "trash")
+                            }
+                        }
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button {
+                                HapticManager.impact(.light)
+                                toggleRead(bookmark)
+                            } label: {
+                                Label(
+                                    bookmark.isRead ? localization.localizedString("common.mark.unread") : localization.localizedString("common.mark.read"),
+                                    systemImage: bookmark.isRead ? "circle" : "checkmark.circle"
+                                )
+                            }
+                            .tint(.green)
+                        }
+                }
+                if hasMore {
+                    loadMoreRow
+                }
             }
-            loadMoreButton
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+        }
+    }
+
+    private var loadMoreRow: some View {
+        Button {
+            withAnimation { displayLimit += pageSize }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.down.circle")
+                Text(localization.localizedString("main.load.more"))
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+        }
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+    
+    private func deleteBookmark(_ bookmark: Bookmark) {
+        withAnimation(.smooth) {
+            modelContext.delete(bookmark)
+        }
+        Task {
+            do {
+                try await supabaseManager.deleteBookmark(id: bookmark.id)
+            } catch {
+                supabaseManager.lastSyncError = localization.localizedString("error.sync.delete")
+            }
+        }
+    }
+    
+    private func toggleRead(_ bookmark: Bookmark) {
+        withAnimation(.smooth) {
+            bookmark.isRead.toggle()
+        }
+        Task {
+            do {
+                try await supabaseManager.updateBookmark(bookmark)
+            } catch {
+                supabaseManager.lastSyncError = localization.localizedString("error.sync.update")
+            }
         }
     }
     
@@ -230,18 +349,19 @@ struct ContentView: View {
             HStack(spacing: 8) {
                 FilterChip(
                     title: localization.localizedString("main.filter.all"),
-                    isSelected: selectedCategory == nil && !showOnlyUnread,
+                    isSelected: selectedCategory == nil && !showOnlyUnread && !showOnlyFavorites,
                     accentColor: themeManager.currentTheme.primaryColor,
                     action: {
                         selectedCategory = nil
                         showOnlyUnread = false
+                        showOnlyFavorites = false
                     }
                 )
                 
                 ForEach(Category.allCases) { category in
-                    let count = bookmarks.filter { $0.category == category.storageKey }.count
+                    let count = bookmarks.filter { (Category.fromStoredValue($0.category) ?? .general).storageKey == category.storageKey }.count
                     FilterChip(
-                        title: category.shortName,
+                        title: category.filterDisplayName,
                         count: count > 0 ? count : nil,
                         isSelected: selectedCategory == category.storageKey,
                         accentColor: category.color,
@@ -257,6 +377,14 @@ struct ContentView: View {
                     isSelected: showOnlyUnread,
                     accentColor: .orange,
                     action: { showOnlyUnread.toggle() }
+                )
+                
+                FilterChip(
+                    title: localization.localizedString("main.filter.favorites"),
+                    count: favoritesCount > 0 ? favoritesCount : nil,
+                    isSelected: showOnlyFavorites,
+                    accentColor: .yellow,
+                    action: { showOnlyFavorites.toggle() }
                 )
             }
             .padding(.horizontal, 4)
@@ -279,7 +407,7 @@ struct ContentView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
             
-            if selectedCategory != nil || showOnlyUnread {
+            if selectedCategory != nil || showOnlyUnread || showOnlyFavorites {
                 Button(action: clearFilters) {
                     Label(localization.localizedString("main.clear.filters"), systemImage: "xmark.circle")
                         .font(.headline)
@@ -304,6 +432,8 @@ struct ContentView: View {
             return localization.localizedString("main.empty.filtered.title")
         } else if showOnlyUnread {
             return localization.localizedString("main.empty.unread.title")
+        } else if showOnlyFavorites {
+            return localization.localizedString("main.empty.favorites.title")
         } else {
             return localization.localizedString("main.empty.default.title")
         }
@@ -314,6 +444,8 @@ struct ContentView: View {
             return localization.localizedString("main.empty.filtered.message")
         } else if showOnlyUnread {
             return localization.localizedString("main.empty.unread.message")
+        } else if showOnlyFavorites {
+            return localization.localizedString("main.empty.favorites.message")
         } else {
             return localization.localizedString("main.empty.default.message")
         }
@@ -322,6 +454,7 @@ struct ContentView: View {
     private func clearFilters() {
         selectedCategory = nil
         showOnlyUnread = false
+        showOnlyFavorites = false
         displayLimit = pageSize
     }
     
@@ -363,6 +496,7 @@ struct ContentView: View {
                         category: dto.category,
                         dateAdded: dto.created_at ?? Date(),
                         isRead: dto.is_read,
+                        isFavorite: dto.is_favorite,
                         thumbnailURL: dto.thumbnail_url,
                         tags: dto.tags
                     )
@@ -488,9 +622,33 @@ struct ContentView: View {
         }
         
         ToolbarItem(placement: .topBarTrailing) {
-            Button(action: { showingAddBookmark = true }) {
-                Image(systemName: "plus")
-                    .font(.headline)
+            HStack(spacing: 16) {
+                Menu {
+                    ForEach(SortOption.allCases, id: \.self) { option in
+                        Button {
+                            HapticManager.selection()
+                            sortOption = option
+                        } label: {
+                            HStack {
+                                Text(localization.localizedString(option.rawValue))
+                                if sortOption == option {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down.circle")
+                        .font(.headline)
+                }
+                
+                Button(action: {
+                    HapticManager.impact(.light)
+                    showingAddBookmark = true
+                }) {
+                    Image(systemName: "plus")
+                        .font(.headline)
+                }
             }
         }
     }
@@ -521,12 +679,20 @@ struct FilterChip: View {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(isSelected ? .semibold : .regular)
-                
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+
                 if let count, count > 0 {
                     Text("\(count)")
                         .font(.caption2)
-                        .fontWeight(.medium)
-                        .foregroundStyle(isSelected ? accentColor : .secondary)
+                        .fontWeight(.bold)
+                        .foregroundStyle(isSelected ? .white : accentColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(isSelected ? accentColor.opacity(0.6) : accentColor.opacity(0.15))
+                        )
                 }
             }
             .padding(.horizontal, 14)
@@ -534,10 +700,18 @@ struct FilterChip: View {
             .background {
                 if isSelected {
                     Capsule()
-                        .fill(accentColor.opacity(0.12))
+                        .fill(accentColor.opacity(0.15))
+                        .background(.ultraThinMaterial, in: Capsule())
+                } else {
+                    Capsule()
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(.primary.opacity(0.1), lineWidth: 1)
+                        )
                 }
             }
-            .foregroundStyle(isSelected ? accentColor : .secondary)
+            .foregroundStyle(isSelected ? accentColor : .primary)
         }
         .buttonStyle(.plain)
     }
@@ -548,7 +722,13 @@ struct FilterChip: View {
 extension View {
     @ViewBuilder
     func glassButtonStyle() -> some View {
-        self.buttonStyle(.borderedProminent)
+        self
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(
+                Capsule()
+                    .strokeBorder(.primary.opacity(0.15), lineWidth: 1)
+            )
+            .shadow(color: .primary.opacity(0.1), radius: 8, x: 0, y: 4)
     }
 }
 

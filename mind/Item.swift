@@ -19,8 +19,9 @@ final class Bookmark {
     var category: String
     var dateAdded: Date
     var isRead: Bool
+    var isFavorite: Bool
     var thumbnailURL: String?
-    var tags: [String] // NEW: Tags array
+    var tags: [String]
     
     init(
         id: UUID = UUID(),
@@ -30,6 +31,7 @@ final class Bookmark {
         category: String = "general",
         dateAdded: Date = Date(),
         isRead: Bool = false,
+        isFavorite: Bool = false,
         thumbnailURL: String? = nil,
         tags: [String] = []
     ) {
@@ -40,6 +42,7 @@ final class Bookmark {
         self.category = category
         self.dateAdded = dateAdded
         self.isRead = isRead
+        self.isFavorite = isFavorite
         self.thumbnailURL = thumbnailURL
         self.tags = tags
     }
@@ -166,6 +169,14 @@ enum Category: String, CaseIterable, Identifiable {
         case .article: return "Article"
         case .video: return "Video"
         case .general: return "General"
+        }
+    }
+
+    /// Display name for filter chips (clearer than shortName for X/Twitter)
+    var filterDisplayName: String {
+        switch self {
+        case .twitter: return "X (Twitter)"
+        default: return shortName
         }
     }
     

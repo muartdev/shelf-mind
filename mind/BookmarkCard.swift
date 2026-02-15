@@ -12,6 +12,7 @@ struct BookmarkCard: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(LocalizationManager.self) private var localization
     @Environment(SupabaseManager.self) private var supabaseManager
+    @Environment(ThemeManager.self) private var themeManager
     let bookmark: Bookmark
     var isCompact: Bool = false
     var onTap: (() -> Void)? = nil
@@ -50,22 +51,17 @@ struct BookmarkCard: View {
             // Header with category and status
             HStack {
                 categoryBadge
-                
-                Spacer()
-                
 
-                
-                Button(action: toggleRead) {
-                    Image(systemName: bookmark.isRead ? "checkmark.circle.fill" : "circle")
-                        .font(.title3)
-                        .foregroundStyle(bookmark.isRead ? .green : .secondary)
-                }
+                Spacer()
+
+                favoriteButton
+                readStatusButton
             }
-            
+
             // Title with Thumbnail
             HStack(alignment: .top, spacing: 12) {
                 thumbnailView(size: 60)
-                
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text(bookmark.title)
                         .font(.headline)
@@ -73,7 +69,7 @@ struct BookmarkCard: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            
+
             // Domain
             HStack(spacing: 4) {
                 Image(systemName: "link")
@@ -83,7 +79,7 @@ struct BookmarkCard: View {
             }
             .foregroundStyle(.secondary)
             .lineLimit(1)
-            
+
             // Notes if available
             if !bookmark.notes.isEmpty {
                 Text(bookmark.notes)
@@ -92,7 +88,7 @@ struct BookmarkCard: View {
                     .lineLimit(2)
                     .padding(.top, 4)
             }
-            
+
             // Tags if available
             if !bookmark.tags.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -108,16 +104,16 @@ struct BookmarkCard: View {
                     }
                 }
             }
-            
+
             // Footer with date
             HStack {
                 Image(systemName: "clock")
                     .font(.caption2)
                 Text(bookmark.dateAdded.relativeDisplayString(language: localization.currentLanguage.code))
                     .font(.caption)
-                
+
                 Spacer()
-                
+
                 Button(action: openURL) {
                     Label(localization.localizedString("common.open"), systemImage: "arrow.up.right")
                         .font(.caption)
@@ -125,6 +121,10 @@ struct BookmarkCard: View {
                 .buttonStyle(.borderless)
             }
             .foregroundStyle(.secondary)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 20))
+        .onTapGesture {
+            onTap?()
         }
     }
     
@@ -139,21 +139,24 @@ struct BookmarkCard: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .lineLimit(2)
+                    .truncationMode(.tail)
                     .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, minHeight: 40, alignment: .topLeading)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
 
                 HStack(spacing: 3) {
                     Image(systemName: "link")
                         .font(.system(size: 9))
                     Text(displayDomain)
                         .font(.caption2)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                 }
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
 
-                HStack {
+                HStack(spacing: 6) {
                     categoryBadge
-                    Spacer()
+                    Spacer(minLength: 4)
+                    favoriteButton
                     readStatusButton
                 }
             }
@@ -188,8 +191,8 @@ struct BookmarkCard: View {
                 }
             } else {
                 ZStack {
-                    Color.gray.opacity(0.05)
-                    thumbnailView(size: 70)
+                    Color.gray.opacity(0.08)
+                    thumbnailView(size: 72)
                 }
             }
         }
@@ -230,12 +233,25 @@ struct BookmarkCard: View {
         }
     }
     
+    private var favoriteButton: some View {
+        let size: CGFloat = isCompact ? 36 : 44
+        return Button(action: toggleFavorite) {
+            Image(systemName: bookmark.isFavorite ? "star.fill" : "star")
+                .font(isCompact ? .body : .title3)
+                .foregroundStyle(bookmark.isFavorite ? .yellow : .secondary)
+                .frame(width: size, height: size)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     private var readStatusButton: some View {
-        Button(action: toggleRead) {
+        let size: CGFloat = isCompact ? 36 : 44
+        return Button(action: toggleRead) {
             Image(systemName: bookmark.isRead ? "checkmark.circle.fill" : "circle")
-                .font(.title3)
+                .font(isCompact ? .body : .title3)
                 .foregroundStyle(bookmark.isRead ? .green : .secondary)
-                .frame(width: 44, height: 44) // Larger touch target
+                .frame(width: size, height: size)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -256,7 +272,7 @@ struct BookmarkCard: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(.white.opacity(0.3), lineWidth: 1)
+                                .strokeBorder(themeManager.currentTheme.borderColor, lineWidth: 1)
                         )
                 case .failure(_):
                     faviconFallback(size: size)
@@ -273,13 +289,14 @@ struct BookmarkCard: View {
     }
     
     private func faviconFallback(size: CGFloat) -> some View {
-        ZStack {
+        let theme = themeManager.currentTheme
+        return ZStack {
             RoundedRectangle(cornerRadius: 12)
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.4, green: 0.5, blue: 1.0).opacity(0.3),
-                            Color(red: 0.6, green: 0.3, blue: 0.9).opacity(0.3)
+                            theme.primaryColor.opacity(0.3),
+                            theme.secondaryColor.opacity(0.3)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -288,14 +305,13 @@ struct BookmarkCard: View {
                 .frame(width: size, height: size)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(.white.opacity(0.3), lineWidth: 1)
+                        .strokeBorder(theme.borderColor, lineWidth: 1)
                 )
-            
-            // Extract first letter from title or domain
+
             Text(extractInitial())
                 .font(size > 70 ? .title : .title2)
                 .fontWeight(.bold)
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
         }
     }
     
@@ -324,15 +340,25 @@ struct BookmarkCard: View {
                 Text(category.rawValue)
                     .font(.caption)
                     .bold()
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .minimumScaleFactor(0.8)
             }
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(.ultraThinMaterial, in: Capsule())
     }
     
     @ViewBuilder
     private var contextMenuContent: some View {
+        Button(action: toggleFavorite) {
+            Label(
+                bookmark.isFavorite ? localization.localizedString("common.unfavorite") : localization.localizedString("common.favorite"),
+                systemImage: bookmark.isFavorite ? "star.slash" : "star"
+            )
+        }
+        
         Button(action: toggleRead) {
             Label(
                 bookmark.isRead ? localization.localizedString("common.mark.unread") : localization.localizedString("common.mark.read"),
@@ -353,20 +379,26 @@ struct BookmarkCard: View {
     
     // MARK: - Actions
     
+    private func toggleFavorite() {
+        HapticManager.impact(.light)
+        withAnimation(.smooth) {
+            bookmark.isFavorite.toggle()
+        }
+        // Sync silently – updateBookmark already enqueues to offline queue on failure
+        Task { try? await supabaseManager.updateBookmark(bookmark) }
+    }
+
     private func toggleRead() {
+        HapticManager.impact(.light)
         withAnimation(.smooth) {
             bookmark.isRead.toggle()
         }
-        Task {
-            do {
-                try await supabaseManager.updateBookmark(bookmark)
-            } catch {
-                supabaseManager.lastSyncError = localization.localizedString("error.sync.update")
-            }
-        }
+        // Sync silently – updateBookmark already enqueues to offline queue on failure
+        Task { try? await supabaseManager.updateBookmark(bookmark) }
     }
 
     private func openURL() {
+        HapticManager.impact(.light)
         if let url = URL(string: bookmark.url) {
             #if os(iOS)
             UIApplication.shared.open(url)
@@ -375,6 +407,7 @@ struct BookmarkCard: View {
     }
 
     private func deleteBookmark() {
+        HapticManager.impact(.medium)
         withAnimation(.smooth) {
             modelContext.delete(bookmark)
         }
@@ -399,11 +432,11 @@ extension View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                .strokeBorder(.primary.opacity(0.15), lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 8)
-        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .shadow(color: .primary.opacity(0.12), radius: 15, x: 0, y: 8)
+        .shadow(color: .primary.opacity(0.05), radius: 5, x: 0, y: 2)
     }
 }
 

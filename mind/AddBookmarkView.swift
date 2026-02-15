@@ -175,7 +175,7 @@ struct AddBookmarkView: View {
                     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+                            .strokeBorder(.primary.opacity(0.06), lineWidth: 1)
                     )
             }
             
@@ -194,7 +194,7 @@ struct AddBookmarkView: View {
                     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+                            .strokeBorder(.primary.opacity(0.06), lineWidth: 1)
                     )
             }
         }
@@ -202,9 +202,9 @@ struct AddBookmarkView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                .strokeBorder(.primary.opacity(0.1), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.1), radius: 20, y: 10)
+        .shadow(color: .primary.opacity(0.08), radius: 20, y: 10)
     }
     
     // MARK: - Preview Card
@@ -239,7 +239,7 @@ struct AddBookmarkView: View {
                             .frame(width: 50, height: 50)
                             .overlay {
                                 ProgressView()
-                                    .tint(.white)
+                                    .tint(.secondary)
                             }
                     }
                 }
@@ -343,7 +343,7 @@ struct AddBookmarkView: View {
                 .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                        .strokeBorder(.primary.opacity(0.08), lineWidth: 1)
                 )
             }
             .buttonStyle(.plain)
@@ -381,7 +381,7 @@ struct AddBookmarkView: View {
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                    .strokeBorder(.primary.opacity(0.08), lineWidth: 1)
             )
             
             // Tags list
@@ -488,6 +488,7 @@ struct AddBookmarkView: View {
         
         // Save to local SwiftData
         modelContext.insert(bookmark)
+        HapticManager.notification(.success)
         
         // Save to Supabase
         Task {
@@ -658,10 +659,10 @@ extension View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                    .strokeBorder(.primary.opacity(0.1), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 8)
-            .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+            .shadow(color: .primary.opacity(0.08), radius: 15, x: 0, y: 8)
+            .shadow(color: .primary.opacity(0.04), radius: 5, x: 0, y: 2)
     }
     
     @ViewBuilder
@@ -677,7 +678,7 @@ extension View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(isSelected ? color.opacity(0.5) : .white.opacity(0.1), lineWidth: isSelected ? 2 : 1)
+                    .strokeBorder(isSelected ? color.opacity(0.5) : .primary.opacity(0.06), lineWidth: isSelected ? 2 : 1)
             )
             .shadow(color: isSelected ? color.opacity(0.2) : .clear, radius: 8, y: 4)
     }

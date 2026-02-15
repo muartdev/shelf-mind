@@ -35,6 +35,36 @@ final class AuthManager {
         }
     }
     
+    func signInWithApple(idToken: String, nonce: String, fullName: (givenName: String?, familyName: String?)?) async {
+        guard !isLoading else { return }
+        isLoading = true
+        error = nil
+        infoKey = nil
+        needsEmailConfirmation = false
+        defer { isLoading = false }
+        
+        do {
+            let user = try await supabase.signInWithApple(idToken: idToken, nonce: nonce, fullName: fullName)
+            currentUser = user
+            isAuthenticated = true
+            saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
+            
+            PaywallManager.shared.setPremiumFromDatabase(
+                isPremium: user.isPremium,
+                expirationDate: user.premiumUntil,
+                purchaseDate: user.premiumPurchaseDate
+            )
+            
+            if let language = LocalizationManager.AppLanguage.allCases.first(where: { $0.code == user.languageCode }) {
+                LocalizationManager.shared.currentLanguage = language
+            }
+            
+            await SupabaseManager.shared.syncPendingOperations()
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+    
     func signIn(email: String, password: String) async {
         guard !isLoading else { return }
         isLoading = true

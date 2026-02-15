@@ -554,10 +554,10 @@ extension View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                    .strokeBorder(.primary.opacity(0.1), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.1), radius: 12, x: 0, y: 6)
-            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+            .shadow(color: .primary.opacity(0.08), radius: 12, x: 0, y: 6)
+            .shadow(color: .primary.opacity(0.04), radius: 4, x: 0, y: 2)
     }
     
     @ViewBuilder
@@ -569,9 +569,9 @@ extension View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                    .strokeBorder(.primary.opacity(0.08), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
+            .shadow(color: .primary.opacity(0.06), radius: 8, x: 0, y: 4)
     }
 }
 

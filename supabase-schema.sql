@@ -43,6 +43,7 @@ CREATE TABLE public.bookmarks (
     category TEXT NOT NULL,
     tags TEXT[] DEFAULT '{}',
     is_read BOOLEAN DEFAULT false,
+    is_favorite BOOLEAN DEFAULT false,
     thumbnail_url TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -119,6 +120,9 @@ BEGIN
     DELETE FROM auth.users WHERE id = auth.uid();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Migration: If bookmarks table already exists without is_favorite, run:
+-- ALTER TABLE public.bookmarks ADD COLUMN IF NOT EXISTS is_favorite BOOLEAN DEFAULT false;
 
 -- Sample categories for reference
 -- x (twitter), instagram, youtube, article, video, general

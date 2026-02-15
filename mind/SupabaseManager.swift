@@ -87,6 +87,43 @@ final class SupabaseManager {
         return user
     }
     
+    /// Sign in with Apple ID token (native Sign in with Apple flow)
+    func signInWithApple(idToken: String, nonce: String, fullName: (givenName: String?, familyName: String?)?) async throws -> User {
+        let credentials = OpenIDConnectCredentials(
+            provider: .apple,
+            idToken: idToken,
+            nonce: nonce
+        )
+        let authResponse = try await client.auth.signInWithIdToken(credentials: credentials)
+        
+        let email = authResponse.user.email ?? ""
+        let fallbackName: String
+        if let fn = fullName {
+            let parts = [fn.givenName, fn.familyName].compactMap { $0 }
+            fallbackName = parts.isEmpty ? (email.split(separator: "@").first.map(String.init) ?? "User") : parts.joined(separator: " ")
+        } else {
+            fallbackName = email.split(separator: "@").first.map(String.init) ?? "User"
+        }
+        
+        let response = try await fetchOrCreateUserProfile(
+            userId: authResponse.user.id,
+            email: email,
+            fallbackName: fallbackName
+        )
+        
+        return User(
+            id: response.id,
+            email: response.email,
+            name: response.name,
+            avatarURL: response.avatar_url,
+            createdAt: response.created_at,
+            isPremium: response.is_premium ?? false,
+            premiumUntil: response.premium_until,
+            premiumPurchaseDate: response.premium_purchase_date,
+            languageCode: response.language_code ?? "en"
+        )
+    }
+    
     func signOut() async throws {
         try await client.auth.signOut()
     }
@@ -209,6 +246,7 @@ final class SupabaseManager {
             category: bookmark.category,
             tags: bookmark.tags,
             is_read: bookmark.isRead,
+            is_favorite: bookmark.isFavorite,
             thumbnail_url: bookmark.thumbnailURL
         )
         
@@ -236,6 +274,7 @@ final class SupabaseManager {
             category: bookmark.category,
             tags: bookmark.tags,
             is_read: bookmark.isRead,
+            is_favorite: bookmark.isFavorite,
             thumbnail_url: bookmark.thumbnailURL
         )
         
@@ -249,6 +288,7 @@ final class SupabaseManager {
                 category: bookmark.category,
                 tags: bookmark.tags,
                 is_read: bookmark.isRead,
+                is_favorite: bookmark.isFavorite,
                 thumbnail_url: bookmark.thumbnailURL
             )
             enqueuePendingOperation(.init(type: .update, bookmark: fullDto))
@@ -270,6 +310,7 @@ final class SupabaseManager {
                 category: bookmark.category,
                 tags: bookmark.tags,
                 is_read: bookmark.isRead,
+                is_favorite: bookmark.isFavorite,
                 thumbnail_url: bookmark.thumbnailURL
             )
             enqueuePendingOperation(.init(type: .update, bookmark: fullDto))
@@ -396,6 +437,7 @@ final class SupabaseManager {
                         category: dto.category,
                         tags: dto.tags,
                         is_read: dto.is_read,
+                        is_favorite: dto.is_favorite,
                         thumbnail_url: dto.thumbnail_url
                     )
                     try await client.from("bookmarks")
@@ -467,10 +509,14 @@ struct BookmarkUpdateDTO: Codable {
     var category: String
     var tags: [String]
     var is_read: Bool
+    var is_favorite: Bool
     var thumbnail_url: String?
 }
 
 struct BookmarkDTO: Codable {
+    enum CodingKeys: String, CodingKey {
+        case id, user_id, title, url, notes, category, tags, is_read, is_favorite, thumbnail_url, created_at, updated_at
+    }
     var id: UUID
     var user_id: UUID?
     var title: String
@@ -479,11 +525,28 @@ struct BookmarkDTO: Codable {
     var category: String
     var tags: [String]
     var is_read: Bool
+    var is_favorite: Bool
     var thumbnail_url: String?
     var created_at: Date?
     var updated_at: Date?
     
-    init(id: UUID, user_id: UUID?, title: String, url: String, notes: String, category: String, tags: [String], is_read: Bool, thumbnail_url: String?, created_at: Date? = nil, updated_at: Date? = nil) {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        user_id = try c.decodeIfPresent(UUID.self, forKey: .user_id)
+        title = try c.decode(String.self, forKey: .title)
+        url = try c.decode(String.self, forKey: .url)
+        notes = try c.decodeIfPresent(String.self, forKey: .notes) ?? ""
+        category = try c.decode(String.self, forKey: .category)
+        tags = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
+        is_read = try c.decodeIfPresent(Bool.self, forKey: .is_read) ?? false
+        is_favorite = try c.decodeIfPresent(Bool.self, forKey: .is_favorite) ?? false
+        thumbnail_url = try c.decodeIfPresent(String.self, forKey: .thumbnail_url)
+        created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
+        updated_at = try c.decodeIfPresent(Date.self, forKey: .updated_at)
+    }
+    
+    init(id: UUID, user_id: UUID?, title: String, url: String, notes: String, category: String, tags: [String], is_read: Bool, is_favorite: Bool = false, thumbnail_url: String?, created_at: Date? = nil, updated_at: Date? = nil) {
         self.id = id
         self.user_id = user_id
         self.title = title
@@ -492,6 +555,7 @@ struct BookmarkDTO: Codable {
         self.category = category
         self.tags = tags
         self.is_read = is_read
+        self.is_favorite = is_favorite
         self.thumbnail_url = thumbnail_url
         self.created_at = created_at
         self.updated_at = updated_at

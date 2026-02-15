@@ -91,10 +91,10 @@ struct OnboardingView: View {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 24)
-                            .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                            .strokeBorder(.primary.opacity(0.1), lineWidth: 1)
                     )
-                    .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
-                    .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+                    .shadow(color: .primary.opacity(0.08), radius: 20, x: 0, y: 10)
+                    .shadow(color: .primary.opacity(0.04), radius: 5, x: 0, y: 2)
                     .padding(.horizontal, 24)
                 }
                 
@@ -127,7 +127,7 @@ struct OnboardingView: View {
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .shadow(color: pages[currentPage].color.opacity(0.4), radius: 15, x: 0, y: 8)
-                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                        .shadow(color: .primary.opacity(0.08), radius: 5, x: 0, y: 2)
                 }
                 .padding(.horizontal, 40)
                 .padding(.bottom, 40)

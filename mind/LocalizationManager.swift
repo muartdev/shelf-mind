@@ -90,6 +90,17 @@ struct LocalizedStrings {
         "main.empty.message": "Start saving your favorite links",
         "main.filter.all": "All",
         "main.filter.unread": "Unread",
+        "main.filter.favorites": "Favorites",
+        "main.empty.favorites.title": "No Favorites Yet",
+        "main.empty.favorites.message": "Star bookmarks to see them here",
+        "main.load.more": "Load More",
+        "sort.date.newest": "Date (Newest)",
+        "sort.date.oldest": "Date (Oldest)",
+        "sort.title.az": "Title (A-Z)",
+        "sort.title.za": "Title (Z-A)",
+        "sort.category": "Category",
+        "sort.read.first": "Read First",
+        "sort.unread.first": "Unread First",
         "main.empty.filtered.title": "No Bookmarks in This Category",
         "main.empty.filtered.message": "Try adding a bookmark with this category or clear the filter to see all",
         "main.empty.unread.title": "All Caught Up!",
@@ -128,6 +139,9 @@ struct LocalizedStrings {
         "stats.complete": "Complete",
         "stats.activity": "Activity",
         "stats.last7days": "Last 7 days",
+        "stats.days.7": "7 days",
+        "stats.days.14": "14 days",
+        "stats.days.30": "30 days",
         "stats.categories": "Categories",
         "stats.types": "types",
         "stats.bookmarks": "bookmarks",
@@ -190,6 +204,7 @@ struct LocalizedStrings {
         // Auth
         "auth.signin": "Sign In",
         "auth.signup": "Sign Up",
+        "auth.signin.apple": "Sign in with Apple",
         "auth.email": "Email",
         "auth.password": "Password",
         "auth.name": "Name",
@@ -209,6 +224,8 @@ struct LocalizedStrings {
         "common.mark.read": "Mark as Read",
         "common.mark.unread": "Mark as Unread",
         "common.open.browser": "Open in Browser",
+        "common.favorite": "Add to Favorites",
+        "common.unfavorite": "Remove from Favorites",
         
         // Paywall UI (New)
         "paywall.most.popular": "Most Popular",
@@ -238,7 +255,7 @@ struct LocalizedStrings {
         "theme.dark": "Dark",
         
         // Auth Errors
-        "auth.error.invalid_credentials": "Invalid login credentials",
+        "auth.error.invalid_credentials": "Email or password is incorrect. Please check and try again.",
         "auth.error.missing_email": "Missing email or phone number",
         "auth.error.password_too_short": "Password should be at least 6 characters",
         "auth.error.already_registered": "User already registered",
@@ -293,6 +310,8 @@ struct LocalizedStrings {
         "add.error.url": "Please enter a URL",
         "add.error.url.invalid": "Please enter a valid URL",
         "add.error.duplicate": "This URL is already saved.",
+        "error.sync.delete": "Could not delete on server",
+        "error.sync.update": "Could not update on server",
         "add.error.duplicate_with_date": "This URL is already saved (%@).",
         
         // Premium Management
@@ -332,6 +351,17 @@ struct LocalizedStrings {
         "main.empty.message": "Favori bağlantılarını kaydetmeye başla",
         "main.filter.all": "Tümü",
         "main.filter.unread": "Okunmamış",
+        "main.filter.favorites": "Favoriler",
+        "main.empty.favorites.title": "Henüz Favori Yok",
+        "main.empty.favorites.message": "Favorilere eklemek için yer imlerine yıldız verin",
+        "main.load.more": "Daha Fazla Yükle",
+        "sort.date.newest": "Tarih (Yeniden eskiye)",
+        "sort.date.oldest": "Tarih (Eskiden yeniye)",
+        "sort.title.az": "Başlık (A-Z)",
+        "sort.title.za": "Başlık (Z-A)",
+        "sort.category": "Kategori",
+        "sort.read.first": "Okunanlar önce",
+        "sort.unread.first": "Okunmayanlar önce",
         "main.empty.filtered.title": "Bu Kategoride Yer İmi Yok",
         "main.empty.filtered.message": "Bu kategoriyle bir yer imi ekleyin veya tümünü görmek için filtreyi temizleyin",
         "main.empty.unread.title": "Hepsi Tamam!",
@@ -370,6 +400,9 @@ struct LocalizedStrings {
         "stats.complete": "Tamamlandı",
         "stats.activity": "Aktivite",
         "stats.last7days": "Son 7 gün",
+        "stats.days.7": "7 gün",
+        "stats.days.14": "14 gün",
+        "stats.days.30": "30 gün",
         "stats.categories": "Kategoriler",
         "stats.types": "tip",
         "stats.bookmarks": "yer imi",
@@ -432,6 +465,7 @@ struct LocalizedStrings {
         // Auth
         "auth.signin": "Giriş Yap",
         "auth.signup": "Kayıt Ol",
+        "auth.signin.apple": "Apple ile Giriş Yap",
         "auth.email": "E-posta",
         "auth.password": "Şifre",
         "auth.name": "Ad",
@@ -451,6 +485,8 @@ struct LocalizedStrings {
         "common.mark.read": "Okundu Olarak İşaretle",
         "common.mark.unread": "Okunmadı Olarak İşaretle",
         "common.open.browser": "Tarayıcıda Aç",
+        "common.favorite": "Favorilere Ekle",
+        "common.unfavorite": "Favorilerden Çıkar",
         
         // Paywall UI (New)
         "paywall.most.popular": "En Popüler",
@@ -480,7 +516,7 @@ struct LocalizedStrings {
         "theme.dark": "Koyu",
         
         // Auth Errors
-        "auth.error.invalid_credentials": "Geçersiz giriş bilgileri",
+        "auth.error.invalid_credentials": "E-posta veya şifre hatalı. Lütfen kontrol edip tekrar dene.",
         "auth.error.missing_email": "E-posta veya telefon numarası eksik",
         "auth.error.password_too_short": "Şifre en az 6 karakter olmalıdır",
         "auth.error.already_registered": "Kullanıcı zaten kayıtlı",
@@ -535,6 +571,8 @@ struct LocalizedStrings {
         "add.error.url": "Lütfen bir URL girin",
         "add.error.url.invalid": "Lütfen geçerli bir URL girin",
         "add.error.duplicate": "Bu URL zaten kaydedilmiş.",
+        "error.sync.delete": "Sunucuda silinemedi",
+        "error.sync.update": "Sunucuda güncellenemedi",
         "add.error.duplicate_with_date": "Bu URL zaten kaydedilmiş (%@).",
 
         // Premium Management

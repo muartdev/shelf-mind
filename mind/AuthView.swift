@@ -113,9 +113,9 @@ struct AuthView: View {
                     )
                     .overlay(
                         Capsule()
-                            .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                            .strokeBorder(.primary.opacity(0.1), lineWidth: 1)
                     )
-                    .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
+                    .shadow(color: .primary.opacity(0.08), radius: 8, y: 4)
                     
                     // Form
                     VStack(spacing: 20) {
@@ -133,20 +133,20 @@ struct AuthView: View {
                             
                             TextField(localization.localizedString("auth.email"), text: $email)
                                 .textFieldStyle()
-                                .textContentType(.emailAddress)
-                               .textInputAutocapitalization(.never)
-                               .keyboardType(.emailAddress)
-                               .autocorrectionDisabled(true)
-                               .focused($focusedField, equals: .email)
-                               .submitLabel(.next)
-                               .onSubmit { focusedField = .password }
-                           
-                           SecureField(localization.localizedString("auth.password"), text: $password)
-                               .textFieldStyle()
-                               .textContentType(.password)
-                               .focused($focusedField, equals: .password)
-                               .submitLabel(.done)
-                               .onSubmit { focusedField = nil }
+                                .textContentType(isSignUp ? .emailAddress : .username)
+                                .textInputAutocapitalization(.never)
+                                .keyboardType(.emailAddress)
+                                .autocorrectionDisabled(true)
+                                .focused($focusedField, equals: .email)
+                                .submitLabel(.next)
+                                .onSubmit { focusedField = .password }
+                            
+                            SecureField(localization.localizedString("auth.password"), text: $password)
+                                .textFieldStyle()
+                                .textContentType(isSignUp ? .newPassword : .password)
+                                .focused($focusedField, equals: .password)
+                                .submitLabel(.done)
+                                .onSubmit { focusedField = nil }
                         }
 
                        if let infoKey = authManager.infoKey {
@@ -168,16 +168,25 @@ struct AuthView: View {
                        }
                        
                        if let error = authManager.error {
-                           HStack(spacing: 6) {
-                               Image(systemName: "exclamationmark.triangle.fill")
+                           HStack(alignment: .top, spacing: 12) {
+                               Image(systemName: "exclamationmark.circle.fill")
+                                   .font(.title3)
+                                   .foregroundStyle(.red)
                                Text(getLocalizedError(error))
+                                   .font(.subheadline)
+                                   .foregroundStyle(.primary)
+                                   .multilineTextAlignment(.leading)
                            }
-                           .font(.caption)
-                           .foregroundStyle(.red)
-                           .padding(.horizontal, 8)
-                           .padding(.vertical, 4)
-                           .background(.red.opacity(0.1), in: Capsule())
                            .frame(maxWidth: .infinity, alignment: .leading)
+                           .padding(16)
+                           .background(
+                               RoundedRectangle(cornerRadius: 12)
+                                   .fill(.red.opacity(0.12))
+                           )
+                           .overlay(
+                               RoundedRectangle(cornerRadius: 12)
+                                   .strokeBorder(.red.opacity(0.4), lineWidth: 1)
+                           )
                        }
                         
                         if !authManager.needsEmailConfirmation {
@@ -217,10 +226,10 @@ struct AuthView: View {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                            .strokeBorder(.primary.opacity(0.1), lineWidth: 1)
                     )
-                    .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
-                    .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+                    .shadow(color: .primary.opacity(0.1), radius: 20, x: 0, y: 10)
+                    .shadow(color: .primary.opacity(0.04), radius: 5, x: 0, y: 2)
                     .padding(.horizontal)
                     
                     Spacer()
@@ -248,10 +257,25 @@ struct AuthView: View {
                         .autocorrectionDisabled(true)
                     
                     if let resetError {
-                        Text(getLocalizedError(resetError))
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .font(.title3)
+                                .foregroundStyle(.red)
+                            Text(getLocalizedError(resetError))
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                                .multilineTextAlignment(.leading)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.red.opacity(0.12))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(.red.opacity(0.4), lineWidth: 1)
+                        )
                     }
                     
                     if resetSent {
@@ -443,7 +467,7 @@ extension View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                    .strokeBorder(.primary.opacity(0.08), lineWidth: 1)
             )
     }
 }
@@ -468,7 +492,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: theme.primaryColor.opacity(0.3), radius: 12, x: 0, y: 6)
-            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+            .shadow(color: .primary.opacity(0.08), radius: 4, x: 0, y: 2)
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
             .animation(.smooth, value: configuration.isPressed)
     }

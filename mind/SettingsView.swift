@@ -34,6 +34,8 @@ struct SettingsView: View {
     @State private var showingPaywall = false
     @State private var showingPaywallForTheme = false
     @State private var showingPremiumDetails = false
+    @State private var showingExportSheet = false
+    @State private var exportFileURL: URL?
 
     private var appVersion: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
@@ -44,212 +46,28 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background gradient
                 LinearGradient(
                     colors: themeManager.currentTheme.gradientColors,
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
-                
+
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Premium Section
                         premiumSection
-                        
-                        // Profile Section
-                        if let user = authManager.currentUser {
-                            HStack(spacing: 16) {
-                                Circle()
-                                    .fill(LinearGradient(
-                                        colors: [themeManager.currentTheme.primaryColor, themeManager.currentTheme.secondaryColor],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ))
-                                    .frame(width: 60, height: 60)
-                                    .overlay {
-                                        Text(user.name.prefix(1).uppercased())
-                                            .font(.title)
-                                            .foregroundStyle(.white)
-                                    }
-                                    .shadow(color: themeManager.currentTheme.primaryColor.opacity(0.3), radius: 8, y: 4)
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(user.name)
-                                        .font(.headline)
-                                    Text(user.email)
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                }
-                                
-                                Spacer()
-                            }
-                            .padding()
-                            .settingsCardStyle()
-                        }
-                        
-                        // Appearance Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(localization.localizedString("settings.appearance"))
-                                .font(.headline)
-                                .foregroundStyle(.secondary)
-                            
-                            HStack(spacing: 8) {
-                                ForEach(AppTheme.allCases) { theme in
-                                    ThemeCard(
-                                        theme: theme,
-                                        isSelected: themeManager.currentTheme == theme,
-                                        action: {
-                                            // All theme changes require premium
-                                            if !PaywallManager.shared.isPremium {
-                                                showingPaywallForTheme = true
-                                            } else {
-                                                withAnimation(.smooth) {
-                                                    themeManager.currentTheme = theme
-                                                }
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                        .padding()
-                        .settingsCardStyle()
-                        
-                        // Notifications
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text(localization.localizedString("settings.notifications"))
-                                .font(.headline)
-                                .foregroundStyle(.secondary)
-
-                            Toggle(localization.localizedString("settings.enable.notifications"), isOn: $notificationsEnabled)
-                                .onChange(of: notificationsEnabled) { _, newValue in
-                                    UserDefaults.standard.set(newValue, forKey: "notificationsEnabled")
-                                    if newValue {
-                                        requestNotificationPermission()
-                                    } else {
-                                        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-                                    }
-                                    syncNotificationSettingsToSupabase()
-                                }
-
-                            if notificationsEnabled {
-                                DatePicker(localization.localizedString("settings.daily.reminder"), selection: $reminderTime, displayedComponents: .hourAndMinute)
-                                    .onChange(of: reminderTime) { _, newValue in
-                                        UserDefaults.standard.set(newValue, forKey: "reminderTime")
-                                        scheduleDailyReminder()
-                                        syncNotificationSettingsToSupabase()
-                                    }
-                            }
-                        }
-                        .padding()
-                        .settingsCardStyle()
-                        
-                        // Data Management
-                        VStack(spacing: 0) {
-                            Text(localization.localizedString("settings.data"))
-                                .font(.headline)
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal)
-                                .padding(.bottom, 12)
-                            
-                            VStack(spacing: 0) {
-                                Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
-                                    HStack {
-                                        Label(localization.localizedString("settings.delete.all"), systemImage: "trash")
-                                        Spacer()
-                                    }
-                                    .padding()
-                                }
-                            }
-                            .settingsCardStyle()
-                        }
-                        
-                        // About
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text(localization.localizedString("settings.about"))
-                                .font(.headline)
-                                .foregroundStyle(.secondary)
-
-                            HStack {
-                                Label(localization.localizedString("settings.language"), systemImage: "globe")
-                                Spacer()
-                                Picker("", selection: Binding(
-                                    get: { localization.currentLanguage },
-                                    set: { newLang in
-                                        withAnimation(.smooth) {
-                                            LocalizationManager.shared.currentLanguage = newLang
-                                        }
-                                    }
-                                )) {
-                                    ForEach(LocalizationManager.AppLanguage.allCases) { language in
-                                        Text("\(language.flag) \(language.rawValue)").tag(language)
-                                    }
-                                }
-                                .pickerStyle(.menu)
-                                .tint(.secondary)
-                            }
-
-                            Divider()
-
-                            HStack {
-                                Text(localization.localizedString("settings.version"))
-                                Spacer()
-                                Text(appVersion)
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            Divider()
-
-                            Link(destination: URL(string: "https://muartdev.github.io/mindshelf-privacy/")!) {
-                                HStack {
-                                    Label(localization.localizedString("settings.privacy.policy"), systemImage: "hand.raised.fill")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-
-                            Divider()
-
-                            Link(destination: URL(string: "https://muartdev.github.io/mindshelf-privacy/")!) {
-                                HStack {
-                                    Label(localization.localizedString("settings.terms"), systemImage: "doc.text.fill")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                        .padding()
-                        .settingsCardStyle()
-                        
-                        // Sign Out
-                        Button(role: .destructive, action: signOut) {
-                            Text(localization.localizedString("settings.signout"))
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                        }
-                        .settingsCardStyle()
-                        
-                        // Delete Account (Bottom)
-                        Button(role: .destructive, action: { showingDeleteAccountConfirmation = true }) {
-                            Text(localization.localizedString("settings.delete.account"))
-                                .font(.footnote)
-                                .foregroundStyle(.red)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                        }
+                        profileSection
+                        appearanceSection
+                        notificationsSection
+                        dataManagementSection
+                        aboutSection
+                        signOutSection
                     }
                     .padding()
                 }
             }
             .navigationTitle(localization.localizedString("settings.title"))
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingPaywallForTheme) {
                 PaywallView()
             }
@@ -261,6 +79,11 @@ struct SettingsView: View {
             } message: {
                 Text("This action cannot be undone. All your bookmarks will be permanently deleted.")
             }
+            .sheet(isPresented: $showingExportSheet) {
+                if let url = exportFileURL {
+                    ShareSheet(items: [url])
+                }
+            }
             .confirmationDialog(localization.localizedString("settings.delete.account"), isPresented: $showingDeleteAccountConfirmation, titleVisibility: .visible) {
                 Button(localization.localizedString("settings.delete.confirm"), role: .destructive) {
                     deleteAccount()
@@ -271,7 +94,228 @@ struct SettingsView: View {
             }
         }
     }
+
+    // MARK: - Profile Section
+
+    @ViewBuilder
+    private var profileSection: some View {
+        if let user = authManager.currentUser {
+            HStack(spacing: 16) {
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [themeManager.currentTheme.primaryColor, themeManager.currentTheme.secondaryColor],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 60, height: 60)
+                    .overlay {
+                        Text(user.name.prefix(1).uppercased())
+                            .font(.title)
+                            .foregroundStyle(.primary)
+                    }
+                    .shadow(color: themeManager.currentTheme.primaryColor.opacity(0.3), radius: 8, y: 4)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(user.name)
+                        .font(.headline)
+                    Text(user.email)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+            .padding()
+            .settingsCardStyle()
+        }
+    }
+
+    // MARK: - Appearance Section
+
+    private var appearanceSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(localization.localizedString("settings.appearance"))
+                .font(.headline)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 8) {
+                ForEach(AppTheme.allCases) { theme in
+                    ThemeCard(
+                        theme: theme,
+                        isSelected: themeManager.currentTheme == theme,
+                        action: {
+                            if !PaywallManager.shared.isPremium {
+                                showingPaywallForTheme = true
+                            } else {
+                                withAnimation(.smooth) {
+                                    themeManager.currentTheme = theme
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        }
+        .padding()
+        .settingsCardStyle()
+    }
+
+    // MARK: - Notifications Section
+
+    private var notificationsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(localization.localizedString("settings.notifications"))
+                .font(.headline)
+                .foregroundStyle(.secondary)
+
+            Toggle(localization.localizedString("settings.enable.notifications"), isOn: $notificationsEnabled)
+                .onChange(of: notificationsEnabled) { _, newValue in
+                    UserDefaults.standard.set(newValue, forKey: "notificationsEnabled")
+                    if newValue {
+                        requestNotificationPermission()
+                    } else {
+                        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+                    }
+                    syncNotificationSettingsToSupabase()
+                }
+
+            if notificationsEnabled {
+                DatePicker(localization.localizedString("settings.daily.reminder"), selection: $reminderTime, displayedComponents: .hourAndMinute)
+                    .onChange(of: reminderTime) { _, newValue in
+                        UserDefaults.standard.set(newValue, forKey: "reminderTime")
+                        scheduleDailyReminder()
+                        syncNotificationSettingsToSupabase()
+                    }
+            }
+        }
+        .padding()
+        .settingsCardStyle()
+    }
+
+    // MARK: - About Section
+
+    private var aboutSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(localization.localizedString("settings.about"))
+                .font(.headline)
+                .foregroundStyle(.secondary)
+
+            HStack {
+                Label(localization.localizedString("settings.language"), systemImage: "globe")
+                Spacer()
+                Picker("", selection: Binding(
+                    get: { localization.currentLanguage },
+                    set: { newLang in
+                        withAnimation(.smooth) {
+                            LocalizationManager.shared.currentLanguage = newLang
+                        }
+                    }
+                )) {
+                    ForEach(LocalizationManager.AppLanguage.allCases) { language in
+                        Text("\(language.flag) \(language.rawValue)").tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
+                .tint(.secondary)
+            }
+
+            Divider()
+
+            HStack {
+                Text(localization.localizedString("settings.version"))
+                Spacer()
+                Text(appVersion)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
+
+            Link(destination: URL(string: "https://muartdev.github.io/mindshelf-privacy/")!) {
+                HStack {
+                    Label(localization.localizedString("settings.privacy.policy"), systemImage: "hand.raised.fill")
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Divider()
+
+            Link(destination: URL(string: "https://muartdev.github.io/mindshelf-privacy/")!) {
+                HStack {
+                    Label(localization.localizedString("settings.terms"), systemImage: "doc.text.fill")
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding()
+        .settingsCardStyle()
+    }
+
+    // MARK: - Sign Out Section
+
+    private var signOutSection: some View {
+        VStack(spacing: 12) {
+            Button(role: .destructive, action: signOut) {
+                Text(localization.localizedString("settings.signout"))
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+            }
+            .settingsCardStyle()
+
+            Button(role: .destructive, action: { showingDeleteAccountConfirmation = true }) {
+                Text(localization.localizedString("settings.delete.account"))
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+            }
+        }
+    }
     
+    // MARK: - Data Management Section
+
+    private var dataManagementSection: some View {
+        VStack(spacing: 0) {
+            Text(localization.localizedString("settings.data"))
+                .font(.headline)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .padding(.bottom, 12)
+
+            VStack(spacing: 0) {
+                Button(action: exportBookmarks) {
+                    HStack {
+                        Label(localization.localizedString("settings.export"), systemImage: "square.and.arrow.up")
+                        Spacer()
+                        Text("\(bookmarks.count)")
+                            .foregroundStyle(.secondary)
+                            .font(.subheadline)
+                    }
+                    .padding()
+                }
+                .buttonStyle(.plain)
+
+                Divider().padding(.leading)
+
+                Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
+                    HStack {
+                        Label(localization.localizedString("settings.delete.all"), systemImage: "trash")
+                        Spacer()
+                    }
+                    .padding()
+                }
+            }
+            .settingsCardStyle()
+        }
+    }
+
     // MARK: - Premium Section
     
     private var premiumSection: some View {
@@ -294,7 +338,7 @@ struct SettingsView: View {
                         // ... rest of the existing premium info ...
                         if PaywallManager.shared.premiumPurchaseDate != nil || PaywallManager.shared.premiumExpirationDate != nil {
                             Divider()
-                                .background(.white.opacity(0.2))
+                                .background(.primary.opacity(0.1))
                             
                             VStack(spacing: 8) {
                                 if let purchaseDate = PaywallManager.shared.premiumPurchaseDate {
@@ -447,7 +491,7 @@ struct SettingsView: View {
                                                 .foregroundStyle(.secondary)
                                         }
                                         .padding()
-                                        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+                                        .background(.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
                                     }
                                     
                                     // Cancellation Guide
@@ -477,7 +521,7 @@ struct SettingsView: View {
                                         }
                                     }
                                     .padding()
-                                    .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+                                    .background(.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
                                 }
                                 .padding(8)
                                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
@@ -571,6 +615,46 @@ struct SettingsView: View {
         center.add(request)
     }
 
+    private func exportBookmarks() {
+        struct ExportBookmark: Encodable {
+            let title: String
+            let url: String
+            let notes: String
+            let category: String
+            let tags: [String]
+            let isRead: Bool
+            let isFavorite: Bool
+            let dateAdded: Date
+            let thumbnailURL: String?
+        }
+
+        let exportData = bookmarks.map { bookmark in
+            ExportBookmark(
+                title: bookmark.title,
+                url: bookmark.url,
+                notes: bookmark.notes,
+                category: bookmark.category,
+                tags: bookmark.tags,
+                isRead: bookmark.isRead,
+                isFavorite: bookmark.isFavorite,
+                dateAdded: bookmark.dateAdded,
+                thumbnailURL: bookmark.thumbnailURL
+            )
+        }
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+
+        guard let data = try? encoder.encode(exportData) else { return }
+
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("MindShelf_Export_\(Date().formatted(.dateTime.year().month().day())).json")
+        try? data.write(to: tempURL)
+
+        exportFileURL = tempURL
+        showingExportSheet = true
+    }
+
     private func deleteAccount() {
         Task {
             // 1. Clear local bookmarks if needed (though sign out clears access)
@@ -602,7 +686,7 @@ struct ThemeCard: View {
                     Image(systemName: theme.icon)
                         .font(.body)
                         .foregroundStyle(.white)
-                    
+
                     if isSelected {
                         Circle()
                             .strokeBorder(theme.primaryColor, lineWidth: 2.5)
@@ -638,10 +722,10 @@ extension View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                    .strokeBorder(.primary.opacity(0.15), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 8)
-            .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+            .shadow(color: .primary.opacity(0.1), radius: 15, x: 0, y: 8)
+            .shadow(color: .primary.opacity(0.04), radius: 5, x: 0, y: 2)
     }
 }
 

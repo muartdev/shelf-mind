@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FB0C94DB2F4264F600F960AA /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB0C94DA2F4264F600F960AA /* WidgetKit.framework */; };
+		FB0C94DD2F4264F600F960AA /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB0C94DC2F4264F600F960AA /* SwiftUI.framework */; };
+		FB0C94E82F4264F800F960AA /* MindShelfWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FB0C94D92F4264F500F960AA /* MindShelfWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		FB46163E2F3A15960013A6C8 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FB4616342F3A15950013A6C8 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		FB46164B2F3A55700013A6C8 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = FB46164A2F3A55700013A6C8 /* Products.storekit */; };
 		FB46164C2F3A55700013A6C8 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = FB46164A2F3A55700013A6C8 /* Products.storekit */; };
@@ -17,6 +20,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		FB0C94E62F4264F800F960AA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FBE576182F38BFEE0004BFA7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FB0C94D82F4264F500F960AA;
+			remoteInfo = MindShelfWidgetExtension;
+		};
 		FB46163C2F3A15960013A6C8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = FBE576182F38BFEE0004BFA7 /* Project object */;
@@ -34,6 +44,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				FB46163E2F3A15960013A6C8 /* ShareExtension.appex in Embed Foundation Extensions */,
+				FB0C94E82F4264F800F960AA /* MindShelfWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -41,6 +52,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FB0C94D92F4264F500F960AA /* MindShelfWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MindShelfWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		FB0C94DA2F4264F600F960AA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		FB0C94DC2F4264F600F960AA /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		FB4616342F3A15950013A6C8 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FB46164A2F3A55700013A6C8 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
 		FBAE2BFB2F390D5A00E60277 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
@@ -48,6 +62,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FB0C94EC2F4264F900F960AA /* Exceptions for "MindShelfWidget" folder in "MindShelfWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FB0C94D82F4264F500F960AA /* MindShelfWidgetExtension */;
+		};
 		FB4616422F3A15960013A6C8 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -65,6 +86,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		FB0C94DE2F4264F600F960AA /* MindShelfWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FB0C94EC2F4264F900F960AA /* Exceptions for "MindShelfWidget" folder in "MindShelfWidgetExtension" target */,
+			);
+			path = MindShelfWidget;
+			sourceTree = "<group>";
+		};
 		FB4616352F3A15950013A6C8 /* ShareExtension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -84,6 +113,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		FB0C94D62F4264F500F960AA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FB0C94DD2F4264F600F960AA /* SwiftUI.framework in Frameworks */,
+				FB0C94DB2F4264F600F960AA /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FB4616312F3A15950013A6C8 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -107,6 +145,8 @@
 		FBAE2BF42F390B5500E60277 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				FB0C94DA2F4264F600F960AA /* WidgetKit.framework */,
+				FB0C94DC2F4264F600F960AA /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -117,6 +157,7 @@
 				FB46164A2F3A55700013A6C8 /* Products.storekit */,
 				FBE576222F38BFEE0004BFA7 /* mind */,
 				FB4616352F3A15950013A6C8 /* ShareExtension */,
+				FB0C94DE2F4264F600F960AA /* MindShelfWidget */,
 				FBAE2BF42F390B5500E60277 /* Frameworks */,
 				FBE576212F38BFEE0004BFA7 /* Products */,
 				FBAE2BFB2F390D5A00E60277 /* Config.xcconfig */,
@@ -128,6 +169,7 @@
 			children = (
 				FBE576202F38BFEE0004BFA7 /* mind.app */,
 				FB4616342F3A15950013A6C8 /* ShareExtension.appex */,
+				FB0C94D92F4264F500F960AA /* MindShelfWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -135,6 +177,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		FB0C94D82F4264F500F960AA /* MindShelfWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FB0C94E92F4264F900F960AA /* Build configuration list for PBXNativeTarget "MindShelfWidgetExtension" */;
+			buildPhases = (
+				FB0C94D52F4264F500F960AA /* Sources */,
+				FB0C94D62F4264F500F960AA /* Frameworks */,
+				FB0C94D72F4264F500F960AA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FB0C94DE2F4264F600F960AA /* MindShelfWidget */,
+			);
+			name = MindShelfWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = MindShelfWidgetExtension;
+			productReference = FB0C94D92F4264F500F960AA /* MindShelfWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		FB4616332F3A15950013A6C8 /* ShareExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FB46163F2F3A15960013A6C8 /* Build configuration list for PBXNativeTarget "ShareExtension" */;
@@ -170,6 +234,7 @@
 			);
 			dependencies = (
 				FB46163D2F3A15960013A6C8 /* PBXTargetDependency */,
+				FB0C94E72F4264F800F960AA /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				FBE576222F38BFEE0004BFA7 /* mind */,
@@ -194,6 +259,9 @@
 				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 2610;
 				TargetAttributes = {
+					FB0C94D82F4264F500F960AA = {
+						CreatedOnToolsVersion = 26.1.1;
+					};
 					FB4616332F3A15950013A6C8 = {
 						CreatedOnToolsVersion = 26.1.1;
 					};
@@ -221,11 +289,19 @@
 			targets = (
 				FBE5761F2F38BFEE0004BFA7 /* mind */,
 				FB4616332F3A15950013A6C8 /* ShareExtension */,
+				FB0C94D82F4264F500F960AA /* MindShelfWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		FB0C94D72F4264F500F960AA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FB4616322F3A15950013A6C8 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -246,6 +322,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		FB0C94D52F4264F500F960AA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FB4616302F3A15950013A6C8 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -263,6 +346,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		FB0C94E72F4264F800F960AA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FB0C94D82F4264F500F960AA /* MindShelfWidgetExtension */;
+			targetProxy = FB0C94E62F4264F800F960AA /* PBXContainerItemProxy */;
+		};
 		FB46163D2F3A15960013A6C8 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = FB4616332F3A15950013A6C8 /* ShareExtension */;
@@ -271,6 +359,70 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		FB0C94EA2F4264F900F960AA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = MindShelfWidget/MindShelfWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S9MLMUT3H4;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MindShelfWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MindShelfWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.muartdev.mind.MindShelfWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		FB0C94EB2F4264F900F960AA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = MindShelfWidget/MindShelfWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S9MLMUT3H4;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MindShelfWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MindShelfWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.muartdev.mind.MindShelfWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		FB4616402F3A15960013A6C8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = FBAE2BFB2F390D5A00E60277 /* Config.xcconfig */;
@@ -529,6 +681,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		FB0C94E92F4264F900F960AA /* Build configuration list for PBXNativeTarget "MindShelfWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FB0C94EA2F4264F900F960AA /* Debug */,
+				FB0C94EB2F4264F900F960AA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		FB46163F2F3A15960013A6C8 /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

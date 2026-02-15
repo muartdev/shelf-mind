@@ -67,8 +67,8 @@ enum AppTheme: String, CaseIterable, Identifiable {
     }
     
     var gradientColors: [Color] {
-        [primaryColor.opacity(isDark ? 0.3 : 0.1), 
-         secondaryColor.opacity(isDark ? 0.3 : 0.1)]
+        [primaryColor.opacity(isDark ? 0.35 : 0.2),
+         secondaryColor.opacity(isDark ? 0.35 : 0.2)]
     }
     
     var accentColor: Color {
@@ -99,6 +99,25 @@ enum AppTheme: String, CaseIterable, Identifiable {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+    }
+}
+
+// MARK: - Adaptive Colors
+
+extension AppTheme {
+    /// Adaptive border color: visible on both light and dark backgrounds
+    var borderColor: Color {
+        isDark ? .white.opacity(0.2) : .black.opacity(0.1)
+    }
+
+    /// Adaptive shadow color
+    var shadowColor: Color {
+        isDark ? .black.opacity(0.3) : .black.opacity(0.12)
+    }
+
+    /// Lighter shadow for subtle depth
+    var shadowColorLight: Color {
+        isDark ? .black.opacity(0.15) : .black.opacity(0.06)
     }
 }
 

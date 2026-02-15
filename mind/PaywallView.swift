@@ -240,7 +240,7 @@ struct PaywallView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .strokeBorder(.white.opacity(0.3), lineWidth: 1)
+                        .strokeBorder(.primary.opacity(0.15), lineWidth: 1)
                 )
             }
             .disabled(isPurchasing || selectedProduct == nil)
@@ -363,7 +363,7 @@ struct FeatureRow: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                .strokeBorder(.primary.opacity(0.1), lineWidth: 1)
         )
     }
 }
