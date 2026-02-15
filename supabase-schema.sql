@@ -105,5 +105,20 @@ CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- Users can delete their own account
+CREATE POLICY "Users can delete own data" ON public.users
+    FOR DELETE USING (auth.uid() = id);
+
+-- RPC function: fully delete the current user (profile + bookmarks cascade + auth record)
+CREATE OR REPLACE FUNCTION public.delete_own_account()
+RETURNS void AS $$
+BEGIN
+    -- Delete profile (bookmarks cascade automatically via FK)
+    DELETE FROM public.users WHERE id = auth.uid();
+    -- Delete auth record
+    DELETE FROM auth.users WHERE id = auth.uid();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Sample categories for reference
 -- x (twitter), instagram, youtube, article, video, general

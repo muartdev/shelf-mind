@@ -14,7 +14,8 @@ struct AddBookmarkView: View {
     @Environment(ThemeManager.self) private var themeManager
     @Environment(AuthManager.self) private var authManager
     @Environment(LocalizationManager.self) private var localization
-    
+    @Environment(SupabaseManager.self) private var supabaseManager
+
     @Query private var bookmarks: [Bookmark]
     
     @State private var title = ""
@@ -90,9 +91,8 @@ struct AddBookmarkView: View {
                             if newValue != oldValue && !newValue.isEmpty {
                                 if PaywallManager.shared.canUseURLPreview(currentCount: bookmarks.count) {
                                     loadURLPreview(for: newValue)
-                                } else {
-                                    showingPaywall = true
                                 }
+                                // Don't interrupt - the premium upsell card below handles the CTA
                             }
                         }
                     
@@ -456,14 +456,14 @@ struct AddBookmarkView: View {
             return
         }
         
-        guard URL(string: url) != nil else {
+        guard let parsedURL = URL(string: url), let scheme = parsedURL.scheme?.lowercased(),
+              ["http", "https"].contains(scheme) else {
             validationMessage = localization.localizedString("add.error.url.invalid")
             showingValidationError = true
             return
         }
 
-        let dedupeKey = Bookmark.dedupeKey(url)
-        if let existing = bookmarks.first(where: { Bookmark.dedupeKey($0.url) == dedupeKey }) {
+        if let existing = bookmarks.findDuplicate(of: url) {
             let dateStr = existing.dateAdded.relativeDisplayString(
                 language: localization.currentLanguage.code
             )
@@ -502,7 +502,7 @@ struct AddBookmarkView: View {
             }
             
             do {
-                try await SupabaseManager.shared.createBookmark(bookmark, userId: userId)
+                try await supabaseManager.createBookmark(bookmark, userId: userId)
                 #if DEBUG
                 print("✅ Bookmark saved to Supabase")
                 #endif
@@ -519,8 +519,16 @@ struct AddBookmarkView: View {
     
     // MARK: - URL Preview
     
+    private static let allowedSchemes: Set<String> = ["http", "https"]
+
     private func loadURLPreview(for urlString: String) {
         previewTask?.cancel()
+
+        // Only fetch previews for safe URLs
+        guard let parsed = URL(string: urlString),
+              let scheme = parsed.scheme?.lowercased(),
+              Self.allowedSchemes.contains(scheme) else { return }
+
         // Debounce - wait a bit for user to finish typing
         previewTask = Task {
             try? await Task.sleep(for: .seconds(0.5))

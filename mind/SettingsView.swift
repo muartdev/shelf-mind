@@ -15,6 +15,7 @@ struct SettingsView: View {
     @Environment(ThemeManager.self) private var themeManager
     @Environment(LocalizationManager.self) private var localization
     @Environment(\.modelContext) private var modelContext
+    @Environment(SupabaseManager.self) private var supabaseManager
     @Query private var bookmarks: [Bookmark]
     
     @State private var notificationsEnabled = UserDefaults.standard.bool(forKey: "notificationsEnabled")
@@ -520,7 +521,7 @@ struct SettingsView: View {
         if authManager.currentUser != nil {
             Task {
                 for id in idsToDelete {
-                    try? await SupabaseManager.shared.deleteBookmark(id: id)
+                    try? await supabaseManager.deleteBookmark(id: id)
                 }
             }
         }
@@ -529,7 +530,7 @@ struct SettingsView: View {
     private func syncNotificationSettingsToSupabase() {
         guard let userId = authManager.currentUser?.id else { return }
         Task {
-            try? await SupabaseManager.shared.updateUserProfile(
+            try? await supabaseManager.updateUserProfile(
                 userId: userId,
                 notificationsEnabled: notificationsEnabled,
                 reminderTime: reminderTime

@@ -11,8 +11,10 @@ import SwiftData
 struct BookmarkCard: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(LocalizationManager.self) private var localization
+    @Environment(SupabaseManager.self) private var supabaseManager
     let bookmark: Bookmark
     var isCompact: Bool = false
+    var onTap: (() -> Void)? = nil
     
     private var displayDomain: String {
         guard let host = URL(string: bookmark.url)?.host else { return bookmark.url }
@@ -138,7 +140,7 @@ struct BookmarkCard: View {
                     .fontWeight(.semibold)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, minHeight: 40, alignment: .topLeading)
 
                 HStack(spacing: 3) {
                     Image(systemName: "link")
@@ -158,33 +160,31 @@ struct BookmarkCard: View {
             .padding(12)
         }
         .frame(maxWidth: .infinity)
+        .contentShape(RoundedRectangle(cornerRadius: 20))
+        .onTapGesture {
+            onTap?()
+        }
         .clipShape(RoundedRectangle(cornerRadius: 20))
     }
 
     private var compactImageSection: some View {
         ZStack {
             if let thumbnailURL = bookmark.thumbnailURL, !thumbnailURL.isEmpty {
-                AsyncImage(url: URL(string: thumbnailURL)) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(minWidth: 0, maxWidth: .infinity)
-                            .frame(height: 120)
-                            .clipped()
-                    case .failure(_), .empty:
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.1))
-                            .overlay(
-                                Image(systemName: "photo")
-                                    .font(.largeTitle)
-                                    .foregroundStyle(.secondary)
-                            )
-                    @unknown default:
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.1))
-                    }
+                CachedAsyncImage(url: URL(string: thumbnailURL)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(minWidth: 0, maxWidth: .infinity)
+                        .frame(height: 120)
+                        .clipped()
+                } placeholder: {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.1))
+                        .overlay(
+                            Image(systemName: "photo")
+                                .font(.largeTitle)
+                                .foregroundStyle(.secondary)
+                        )
                 }
             } else {
                 ZStack {
@@ -358,10 +358,14 @@ struct BookmarkCard: View {
             bookmark.isRead.toggle()
         }
         Task {
-            try? await SupabaseManager.shared.updateBookmark(bookmark)
+            do {
+                try await supabaseManager.updateBookmark(bookmark)
+            } catch {
+                supabaseManager.lastSyncError = localization.localizedString("error.sync.update")
+            }
         }
     }
-    
+
     private func openURL() {
         if let url = URL(string: bookmark.url) {
             #if os(iOS)
@@ -369,13 +373,17 @@ struct BookmarkCard: View {
             #endif
         }
     }
-    
+
     private func deleteBookmark() {
         withAnimation(.smooth) {
             modelContext.delete(bookmark)
         }
         Task {
-            try? await SupabaseManager.shared.deleteBookmark(id: bookmark.id)
+            do {
+                try await supabaseManager.deleteBookmark(id: bookmark.id)
+            } catch {
+                supabaseManager.lastSyncError = localization.localizedString("error.sync.delete")
+            }
         }
     }
 }

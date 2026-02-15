@@ -192,6 +192,18 @@ enum Category: String, CaseIterable, Identifiable {
     }
 }
 
+extension Array where Element == Bookmark {
+    func containsDuplicate(of url: String) -> Bool {
+        let key = Bookmark.dedupeKey(url)
+        return contains(where: { Bookmark.dedupeKey($0.url) == key })
+    }
+
+    func findDuplicate(of url: String) -> Bookmark? {
+        let key = Bookmark.dedupeKey(url)
+        return first(where: { Bookmark.dedupeKey($0.url) == key })
+    }
+}
+
 // Sample data for preview
 extension Bookmark {
     static let samples: [Bookmark] = [

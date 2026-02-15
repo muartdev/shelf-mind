@@ -14,7 +14,8 @@ struct BookmarkDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(ThemeManager.self) private var themeManager
     @Environment(LocalizationManager.self) private var localization
-    
+    @Environment(SupabaseManager.self) private var supabaseManager
+
     let bookmark: Bookmark
     
     @State private var isEditing = false
@@ -446,8 +447,12 @@ struct BookmarkDetailView: View {
     private func toggleRead() {
         withAnimation(.smooth) {
             bookmark.isRead.toggle()
-            Task {
-                try? await SupabaseManager.shared.updateBookmark(bookmark)
+        }
+        Task {
+            do {
+                try await supabaseManager.updateBookmark(bookmark)
+            } catch {
+                supabaseManager.lastSyncError = "Failed to sync read status"
             }
         }
     }
@@ -500,9 +505,13 @@ struct BookmarkDetailView: View {
         try? modelContext.save()
 
         Task {
-            try? await SupabaseManager.shared.updateBookmark(bookmark)
+            do {
+                try await supabaseManager.updateBookmark(bookmark)
+            } catch {
+                supabaseManager.lastSyncError = "Failed to sync bookmark changes"
+            }
         }
-        
+
         withAnimation(.smooth) {
             isEditing = false
         }
@@ -523,7 +532,11 @@ struct BookmarkDetailView: View {
     private func deleteBookmark() {
         modelContext.delete(bookmark)
         Task {
-            try? await SupabaseManager.shared.deleteBookmark(id: bookmark.id)
+            do {
+                try await supabaseManager.deleteBookmark(id: bookmark.id)
+            } catch {
+                supabaseManager.lastSyncError = "Failed to delete bookmark from cloud"
+            }
         }
         dismiss()
     }

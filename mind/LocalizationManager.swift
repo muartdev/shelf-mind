@@ -70,7 +70,8 @@ struct LocalizedStrings {
         case .english:
             return english[key] ?? key
         case .turkish:
-            return turkish[key] ?? key
+            // Fallback to English if Turkish translation is missing
+            return turkish[key] ?? english[key] ?? key
         }
     }
     

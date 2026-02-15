@@ -12,6 +12,21 @@ import SwiftUI
 final class URLPreviewManager {
     static let shared = URLPreviewManager()
     
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 10
+        config.timeoutIntervalForResource = 15
+        return URLSession(configuration: config)
+    }()
+
+    // Pre-compiled regex for favicon extraction
+    private let faviconRegex: NSRegularExpression? = {
+        try? NSRegularExpression(
+            pattern: "<link[^>]*rel=[\"'](?:icon|shortcut icon)[\"'][^>]*href=[\"']([^\"']+)[\"'][^>]*>",
+            options: .caseInsensitive
+        )
+    }()
+
     private init() {}
     
     struct Preview {
@@ -35,7 +50,7 @@ final class URLPreviewManager {
             forHTTPHeaderField: "User-Agent"
         )
         request.setValue("text/html,application/xhtml+xml", forHTTPHeaderField: "Accept")
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await session.data(for: request)
         guard let html = String(data: data, encoding: .utf8) else {
             throw URLError(.cannotDecodeContentData)
         }
@@ -89,10 +104,7 @@ final class URLPreviewManager {
     }
     
     private func extractFavicon(html: String, baseURL: URL) -> String? {
-        // Try to find <link rel="icon" href="...">
-        let pattern = "<link[^>]*rel=[\"'](?:icon|shortcut icon)[\"'][^>]*href=[\"']([^\"']+)[\"'][^>]*>"
-        
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
+        guard let regex = faviconRegex else {
             return "\(baseURL.scheme ?? "https")://\(baseURL.host ?? "")/favicon.ico"
         }
         

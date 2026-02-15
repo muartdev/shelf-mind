@@ -16,6 +16,7 @@ final class SupabaseManager {
     
     let client: SupabaseClient
     private let pendingOpsKey = "pendingBookmarkOps"
+    var lastSyncError: String?
     
     private init() {
         // Initialize Supabase client with config
@@ -296,15 +297,8 @@ final class SupabaseManager {
     // MARK: - Account Management
     
     func deleteAccount(userId: UUID) async throws {
-        // Delete from public.users table
-        // We rely on this to trigger any necessary cleanups or just remove the profile
-        try await client.from("users")
-            .delete()
-            .eq("id", value: userId.uuidString)
-            .execute()
-            
-        // Note: Actual Auth user deletion usually requires Admin API or specific RPC.
-        // For this app, deleting the profile and signing out is the best client-side action.
+        // Call the SECURITY DEFINER RPC that deletes profile, bookmarks (cascade), and auth record
+        try await client.rpc("delete_own_account").execute()
     }
     
     struct PremiumUpdate: Encodable {

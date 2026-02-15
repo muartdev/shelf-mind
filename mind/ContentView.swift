@@ -13,6 +13,7 @@ struct ContentView: View {
     @Environment(ThemeManager.self) private var themeManager
     @Environment(AuthManager.self) private var authManager
     @Environment(LocalizationManager.self) private var localization
+    @Environment(SupabaseManager.self) private var supabaseManager
     @Query(sort: \Bookmark.dateAdded, order: .reverse) private var bookmarks: [Bookmark]
     
     @State private var showingAddBookmark = false
@@ -22,6 +23,8 @@ struct ContentView: View {
     @State private var showOnlyUnread = false
     @State private var isLoadingFromSupabase = false
     @State private var viewMode: ViewMode = .list
+    @State private var displayLimit = 20
+    private let pageSize = 20
     
     enum ViewMode {
         case list
@@ -29,32 +32,38 @@ struct ContentView: View {
     }
     
     var filteredBookmarks: [Bookmark] {
-        var result = bookmarks
-        
-        // Filter by category
-        if let selectedCategory {
-            result = result.filter { $0.category == selectedCategory }
-        }
-        
-        // Filter by read status
-        if showOnlyUnread {
-            result = result.filter { !$0.isRead }
-        }
-        
-        // Search filter
-        if !searchText.isEmpty {
-            result = result.filter { bookmark in
-                bookmark.title.localizedStandardContains(searchText) ||
-                bookmark.notes.localizedStandardContains(searchText) ||
-                bookmark.url.localizedStandardContains(searchText)
+        let search = searchText
+        let category = selectedCategory
+        let unreadOnly = showOnlyUnread
+
+        // Single-pass filter for better performance
+        return bookmarks.filter { bookmark in
+            if let category, bookmark.category != category {
+                return false
             }
+            if unreadOnly && bookmark.isRead {
+                return false
+            }
+            if !search.isEmpty {
+                let matchesSearch = bookmark.title.localizedStandardContains(search) ||
+                    bookmark.notes.localizedStandardContains(search) ||
+                    bookmark.url.localizedStandardContains(search)
+                if !matchesSearch { return false }
+            }
+            return true
         }
-        
-        return result
     }
-    
+
+    var paginatedBookmarks: [Bookmark] {
+        Array(filteredBookmarks.prefix(displayLimit))
+    }
+
+    var hasMore: Bool {
+        displayLimit < filteredBookmarks.count
+    }
+
     var unreadCount: Int {
-        bookmarks.filter { !$0.isRead }.count
+        bookmarks.lazy.filter { !$0.isRead }.count
     }
     
     var body: some View {
@@ -102,10 +111,34 @@ struct ContentView: View {
                 loadPendingBookmarksFromShareExtension()
                 syncSavedURLsToAppGroup()
             }
-            .onAppear {
-                loadPendingBookmarksFromShareExtension()
-                syncSavedURLsToAppGroup()
+            .overlay(alignment: .bottom) {
+                if let error = supabaseManager.lastSyncError {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.icloud")
+                        Text(error)
+                            .font(.caption)
+                        Spacer()
+                        Button {
+                            supabaseManager.lastSyncError = nil
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.caption2)
+                        }
+                    }
+                    .padding(12)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .onAppear {
+                        // Auto-dismiss after 4 seconds
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                            withAnimation { supabaseManager.lastSyncError = nil }
+                        }
+                    }
+                }
             }
+            .animation(.smooth, value: supabaseManager.lastSyncError)
         }
     }
     
@@ -113,11 +146,11 @@ struct ContentView: View {
     
     private var bookmarkListView: some View {
         VStack(spacing: 0) {
-            // Sticky Filter Header
+                    // Sticky Filter Header - minimal
             filterChipsView
-                .padding(.vertical, 12)
-                .background(.ultraThinMaterial)
-                .zIndex(1) // Ensure it sits on top of scrolling content
+                .padding(.vertical, 10)
+                .padding(.horizontal, 4)
+                .zIndex(1)
             
             // Scrollable Content
             ScrollView {
@@ -141,26 +174,48 @@ struct ContentView: View {
     
     private var listLayout: some View {
         LazyVStack(spacing: 16) {
-            ForEach(filteredBookmarks) { bookmark in
+            ForEach(paginatedBookmarks) { bookmark in
                 BookmarkCard(bookmark: bookmark)
                     .onTapGesture {
                         selectedBookmark = bookmark
                     }
             }
+            loadMoreButton
         }
     }
     
     private var gridLayout: some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible(), spacing: 16),
-            GridItem(.flexible(), spacing: 16)
-        ], spacing: 16) {
-            ForEach(filteredBookmarks) { bookmark in
-                BookmarkCard(bookmark: bookmark, isCompact: true)
-                    .onTapGesture {
+        VStack(spacing: 16) {
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 16),
+                GridItem(.flexible(), spacing: 16)
+            ], spacing: 16) {
+                ForEach(paginatedBookmarks) { bookmark in
+                    BookmarkCard(bookmark: bookmark, isCompact: true, onTap: {
                         selectedBookmark = bookmark
-                    }
+                    })
+                }
             }
+            loadMoreButton
+        }
+    }
+
+    @ViewBuilder
+    private var loadMoreButton: some View {
+        if hasMore {
+            Button {
+                withAnimation { displayLimit += pageSize }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.down.circle")
+                    Text(localization.localizedString("main.load.more"))
+                }
+                .font(.subheadline)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
         }
     }
     
@@ -171,22 +226,25 @@ struct ContentView: View {
     
     @ViewBuilder
     private var filterChipsView: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 12) {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
                 FilterChip(
                     title: localization.localizedString("main.filter.all"),
-                    icon: "square.grid.2x2",
-                    isSelected: selectedCategory == nil,
-                    action: { selectedCategory = nil }
+                    isSelected: selectedCategory == nil && !showOnlyUnread,
+                    accentColor: themeManager.currentTheme.primaryColor,
+                    action: {
+                        selectedCategory = nil
+                        showOnlyUnread = false
+                    }
                 )
                 
                 ForEach(Category.allCases) { category in
                     let count = bookmarks.filter { $0.category == category.storageKey }.count
                     FilterChip(
-                        title: category.rawValue,
-                        icon: category.icon,
+                        title: category.shortName,
                         count: count > 0 ? count : nil,
                         isSelected: selectedCategory == category.storageKey,
+                        accentColor: category.color,
                         action: {
                             selectedCategory = selectedCategory == category.storageKey ? nil : category.storageKey
                         }
@@ -195,15 +253,14 @@ struct ContentView: View {
                 
                 FilterChip(
                     title: localization.localizedString("main.filter.unread"),
-                    icon: "circle.badge",
                     count: unreadCount > 0 ? unreadCount : nil,
                     isSelected: showOnlyUnread,
+                    accentColor: .orange,
                     action: { showOnlyUnread.toggle() }
                 )
             }
             .padding(.horizontal, 4)
         }
-        .scrollIndicators(.hidden)
     }
     
     private var emptyStateView: some View {
@@ -265,6 +322,7 @@ struct ContentView: View {
     private func clearFilters() {
         selectedCategory = nil
         showOnlyUnread = false
+        displayLimit = pageSize
     }
     
     // MARK: - Supabase Sync
@@ -282,7 +340,7 @@ struct ContentView: View {
         defer { isLoadingFromSupabase = false }
         
         do {
-            let supabaseBookmarks = try await SupabaseManager.shared.fetchBookmarks(userId: userId)
+            let supabaseBookmarks = try await supabaseManager.fetchBookmarks(userId: userId)
             #if DEBUG
             print("✅ Fetched \(supabaseBookmarks.count) bookmarks from Supabase")
             #endif
@@ -344,8 +402,7 @@ struct ContentView: View {
                 continue
             }
 
-            let dedupeKey = Bookmark.dedupeKey(url)
-            if bookmarks.contains(where: { Bookmark.dedupeKey($0.url) == dedupeKey }) {
+            if bookmarks.containsDuplicate(of: url) {
                 continue
             }
 
@@ -385,7 +442,7 @@ struct ContentView: View {
             if let userId = authManager.currentUser?.id {
                 Task {
                     do {
-                        try await SupabaseManager.shared.createBookmark(bookmark, userId: userId)
+                        try await supabaseManager.createBookmark(bookmark, userId: userId)
                         #if DEBUG
                         print("✅ Synced shared bookmark to Supabase: \(title)")
                         #endif
@@ -445,39 +502,44 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Filter Chip Component
+// MARK: - Filter Chip Component (Minimal)
 
 struct FilterChip: View {
     let title: String
-    let icon: String
     var count: Int?
     let isSelected: Bool
+    var accentColor: Color = .blue
     let action: () -> Void
     
     var body: some View {
         Button(action: {
-            withAnimation(.smooth) {
+            withAnimation(.smooth(duration: 0.2)) {
                 action()
             }
         }) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.subheadline)
-                
+            HStack(spacing: 4) {
                 Text(title)
                     .font(.subheadline)
-                    .bold()
+                    .fontWeight(isSelected ? .semibold : .regular)
                 
-                if let count {
-                    Text("(\(count))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                if let count, count > 0 {
+                    Text("\(count)")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundStyle(isSelected ? accentColor : .secondary)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 14)
             .padding(.vertical, 8)
+            .background {
+                if isSelected {
+                    Capsule()
+                        .fill(accentColor.opacity(0.12))
+                }
+            }
+            .foregroundStyle(isSelected ? accentColor : .secondary)
         }
-        .chipStyle(isSelected: isSelected)
+        .buttonStyle(.plain)
     }
 }
 
@@ -487,14 +549,6 @@ extension View {
     @ViewBuilder
     func glassButtonStyle() -> some View {
         self.buttonStyle(.borderedProminent)
-    }
-    
-    @ViewBuilder
-    func chipStyle(isSelected: Bool) -> some View {
-        self.background(
-            isSelected ? .ultraThinMaterial : .thinMaterial,
-            in: Capsule()
-        )
     }
 }
 

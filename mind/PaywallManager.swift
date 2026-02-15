@@ -14,11 +14,18 @@ import StoreKit
 final class PaywallManager {
     static let shared = PaywallManager()
     
-    // Premium status
+    // Premium status - StoreKit is the source of truth, database is fallback only
     private(set) var isPremium: Bool = false
+    private(set) var premiumSource: PremiumSource = .none
     private var isPremiumFromDatabase: Bool = false
     private var databaseExpirationDate: Date?
     private var databasePurchaseDate: Date?
+
+    enum PremiumSource: String {
+        case none
+        case storeKit
+        case database
+    }
     
     var isLifetime: Bool {
         if let transaction = lastVerifiedTransaction {
@@ -224,8 +231,17 @@ final class PaywallManager {
         // Apply StoreKit results
         self.lastVerifiedTransaction = latestTransaction
         
-        // FINAL STATUS: StoreKit OR Database
-        self.isPremium = hasPremiumStoreKit || isPremiumFromDatabase
+        // FINAL STATUS: StoreKit is primary, database is fallback
+        if hasPremiumStoreKit {
+            self.isPremium = true
+            self.premiumSource = .storeKit
+        } else if isPremiumFromDatabase {
+            self.isPremium = true
+            self.premiumSource = .database
+        } else {
+            self.isPremium = false
+            self.premiumSource = .none
+        }
         
         // SYNC TO DATABASE
         if let userId = UserDefaults.standard.string(forKey: "userId"), let userUUID = UUID(uuidString: userId) {
