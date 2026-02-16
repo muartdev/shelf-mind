@@ -54,7 +54,8 @@ struct AuthView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 96, height: 96)
-                            .shadow(color: themeManager.currentTheme.primaryColor.opacity(0.2), radius: 12, x: 0, y: 6)
+                            .clipShape(RoundedRectangle(cornerRadius: 22))
+                            .shadow(color: themeManager.currentTheme.primaryColor.opacity(0.3), radius: 16, x: 0, y: 8)
                         
                         Text("MindShelf")
                             .font(.largeTitle)

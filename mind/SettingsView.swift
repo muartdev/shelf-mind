@@ -34,8 +34,6 @@ struct SettingsView: View {
     @State private var showingPaywall = false
     @State private var showingPaywallForTheme = false
     @State private var showingPremiumDetails = false
-    @State private var showingExportSheet = false
-    @State private var exportFileURL: URL?
 
     private var appVersion: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
@@ -79,12 +77,7 @@ struct SettingsView: View {
             } message: {
                 Text("This action cannot be undone. All your bookmarks will be permanently deleted.")
             }
-            .sheet(isPresented: $showingExportSheet) {
-                if let url = exportFileURL {
-                    ShareSheet(items: [url])
-                }
-            }
-            .confirmationDialog(localization.localizedString("settings.delete.account"), isPresented: $showingDeleteAccountConfirmation, titleVisibility: .visible) {
+.confirmationDialog(localization.localizedString("settings.delete.account"), isPresented: $showingDeleteAccountConfirmation, titleVisibility: .visible) {
                 Button(localization.localizedString("settings.delete.confirm"), role: .destructive) {
                     deleteAccount()
                 }
@@ -290,20 +283,6 @@ struct SettingsView: View {
                 .padding(.bottom, 12)
 
             VStack(spacing: 0) {
-                Button(action: exportBookmarks) {
-                    HStack {
-                        Label(localization.localizedString("settings.export"), systemImage: "square.and.arrow.up")
-                        Spacer()
-                        Text("\(bookmarks.count)")
-                            .foregroundStyle(.secondary)
-                            .font(.subheadline)
-                    }
-                    .padding()
-                }
-                .buttonStyle(.plain)
-
-                Divider().padding(.leading)
-
                 Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
                     HStack {
                         Label(localization.localizedString("settings.delete.all"), systemImage: "trash")
@@ -626,45 +605,6 @@ struct SettingsView: View {
         center.add(request)
     }
 
-    private func exportBookmarks() {
-        struct ExportBookmark: Encodable {
-            let title: String
-            let url: String
-            let notes: String
-            let category: String
-            let tags: [String]
-            let isRead: Bool
-            let isFavorite: Bool
-            let dateAdded: Date
-            let thumbnailURL: String?
-        }
-
-        let exportData = bookmarks.map { bookmark in
-            ExportBookmark(
-                title: bookmark.title,
-                url: bookmark.url,
-                notes: bookmark.notes,
-                category: bookmark.category,
-                tags: bookmark.tags,
-                isRead: bookmark.isRead,
-                isFavorite: bookmark.isFavorite,
-                dateAdded: bookmark.dateAdded,
-                thumbnailURL: bookmark.thumbnailURL
-            )
-        }
-
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-
-        guard let data = try? encoder.encode(exportData) else { return }
-
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("MindShelf_Export_\(Date().formatted(.dateTime.year().month().day())).json")
-        try? data.write(to: tempURL)
-
-        exportFileURL = tempURL
-        showingExportSheet = true
-    }
 
     private func deleteAccount() {
         Task {

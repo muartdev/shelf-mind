@@ -8,6 +8,8 @@
 import SwiftUI
 import SwiftData
 
+private let appGroupID = "group.com.muartdev.mind"
+
 @main
 struct mindApp: App {
     @State private var authManager = AuthManager()
@@ -21,21 +23,73 @@ struct mindApp: App {
             Bookmark.self,
             User.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
+        // Prefer App Group storage for reliable access on device
+        let storeURL: URL? = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
+            .map { $0.appending(path: "Library/Application Support/default.store") }
+
+        func ensureStoreDirectoryExists() {
+            guard let url = storeURL else { return }
+            let dir = url.deletingLastPathComponent()
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+
+        func deleteStoreFiles(at url: URL) {
+            let fm = FileManager.default
+            try? fm.removeItem(at: url)
+            try? fm.removeItem(atPath: url.path + "-shm")
+            try? fm.removeItem(atPath: url.path + "-wal")
+        }
+
+        // Try 1: App Group storage (most reliable on device)
+        if let url = storeURL {
+            ensureStoreDirectoryExists()
+            let config = ModelConfiguration(schema: schema, url: url, isStoredInMemoryOnly: false)
+            do {
+                return try ModelContainer(for: schema, configurations: [config])
+            } catch {
+                #if DEBUG
+                print("❌ ModelContainer (App Group) failed: \(error). Retrying after store reset...")
+                #endif
+                deleteStoreFiles(at: url)
+                ensureStoreDirectoryExists()
+                do {
+                    return try ModelContainer(for: schema, configurations: [config])
+                } catch {
+                    #if DEBUG
+                    print("❌ Retry failed: \(error). Trying default location...")
+                #endif
+                }
+            }
+        }
+
+        // Try 2: Default Application Support
+        let defaultDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let defaultURL = defaultDir.appending(path: "default.store")
+        try? FileManager.default.createDirectory(at: defaultDir, withIntermediateDirectories: true)
+        let defaultConfig = ModelConfiguration(schema: schema, url: defaultURL, isStoredInMemoryOnly: false)
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(for: schema, configurations: [defaultConfig])
         } catch {
             #if DEBUG
-            print("❌ Failed to create ModelContainer: \(error). Falling back to in-memory store.")
+            print("❌ Default store failed: \(error). Retrying after reset...")
             #endif
-            // Fallback: in-memory container so the app doesn't crash
-            let fallbackConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            deleteStoreFiles(at: defaultURL)
             do {
-                return try ModelContainer(for: schema, configurations: [fallbackConfig])
+                return try ModelContainer(for: schema, configurations: [defaultConfig])
             } catch {
-                fatalError("Could not create even in-memory ModelContainer: \(error)")
+                #if DEBUG
+                print("❌ Retry failed: \(error). Falling back to in-memory.")
+                #endif
             }
+        }
+
+        // Fallback: in-memory
+        let fallbackConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        do {
+            return try ModelContainer(for: schema, configurations: [fallbackConfig])
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
         }
     }()
 

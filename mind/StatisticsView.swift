@@ -412,8 +412,7 @@ struct StatMiniCard: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, minHeight: 80)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.primary.opacity(0.15), lineWidth: 1))
         .shadow(color: .primary.opacity(0.08), radius: 8, y: 4)

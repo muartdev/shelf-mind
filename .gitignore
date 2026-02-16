@@ -47,6 +47,10 @@ setup.sh
 # Configuration files with secrets
 Config.xcconfig
 
+# Web (Vite/React)
+web/node_modules
+web/dist
+
 # Temporary / accidental files
 File.txt
 
