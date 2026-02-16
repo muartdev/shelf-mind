@@ -47,6 +47,9 @@ setup.sh
 # Configuration files with secrets
 Config.xcconfig
 
+# Temporary / accidental files
+File.txt
+
 # Secret files (local only)
 .env
 .env.*

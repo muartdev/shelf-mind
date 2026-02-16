@@ -204,7 +204,6 @@ struct LocalizedStrings {
         // Auth
         "auth.signin": "Sign In",
         "auth.signup": "Sign Up",
-        "auth.signin.apple": "Sign in with Apple",
         "auth.email": "Email",
         "auth.password": "Password",
         "auth.name": "Name",
@@ -465,7 +464,6 @@ struct LocalizedStrings {
         // Auth
         "auth.signin": "Giriş Yap",
         "auth.signup": "Kayıt Ol",
-        "auth.signin.apple": "Apple ile Giriş Yap",
         "auth.email": "E-posta",
         "auth.password": "Şifre",
         "auth.name": "Ad",

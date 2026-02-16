@@ -1,6 +1,6 @@
 {
   "appPolicies" : {
-    "eula" : "",
+    "eula" : "https://muartdev.github.io/mindshelf-privacy/",
     "policies" : [
       {
         "locale" : "en_US",

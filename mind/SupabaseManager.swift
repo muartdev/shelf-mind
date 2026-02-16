@@ -87,43 +87,6 @@ final class SupabaseManager {
         return user
     }
     
-    /// Sign in with Apple ID token (native Sign in with Apple flow)
-    func signInWithApple(idToken: String, nonce: String, fullName: (givenName: String?, familyName: String?)?) async throws -> User {
-        let credentials = OpenIDConnectCredentials(
-            provider: .apple,
-            idToken: idToken,
-            nonce: nonce
-        )
-        let authResponse = try await client.auth.signInWithIdToken(credentials: credentials)
-        
-        let email = authResponse.user.email ?? ""
-        let fallbackName: String
-        if let fn = fullName {
-            let parts = [fn.givenName, fn.familyName].compactMap { $0 }
-            fallbackName = parts.isEmpty ? (email.split(separator: "@").first.map(String.init) ?? "User") : parts.joined(separator: " ")
-        } else {
-            fallbackName = email.split(separator: "@").first.map(String.init) ?? "User"
-        }
-        
-        let response = try await fetchOrCreateUserProfile(
-            userId: authResponse.user.id,
-            email: email,
-            fallbackName: fallbackName
-        )
-        
-        return User(
-            id: response.id,
-            email: response.email,
-            name: response.name,
-            avatarURL: response.avatar_url,
-            createdAt: response.created_at,
-            isPremium: response.is_premium ?? false,
-            premiumUntil: response.premium_until,
-            premiumPurchaseDate: response.premium_purchase_date,
-            languageCode: response.language_code ?? "en"
-        )
-    }
-    
     func signOut() async throws {
         try await client.auth.signOut()
     }

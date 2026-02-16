@@ -133,7 +133,7 @@ struct AuthView: View {
                             
                             TextField(localization.localizedString("auth.email"), text: $email)
                                 .textFieldStyle()
-                                .textContentType(isSignUp ? .emailAddress : .username)
+                                .textContentType(.username)
                                 .textInputAutocapitalization(.never)
                                 .keyboardType(.emailAddress)
                                 .autocorrectionDisabled(true)

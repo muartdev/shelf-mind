@@ -49,7 +49,7 @@ A minimalist, modern SwiftUI bookmark management app for iOS, powered by Supabas
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/mindshelf.git
+git clone https://github.com/muartdev/shelf-mind.git
 cd mindshelf/mind
 ```
 
@@ -172,9 +172,9 @@ mind/
 
 ## 🚧 Roadmap
 
-- [ ] URL metadata fetching (Open Graph)
+- [x] URL metadata fetching (Open Graph)
+- [x] Widget support
 - [ ] Browser extension for easy bookmark saving
-- [ ] Widget support
 - [ ] iCloud sync as alternative to Supabase
 - [ ] Import/Export bookmarks (JSON, CSV)
 - [ ] Sharing bookmarks with friends
@@ -196,9 +196,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👤 Author
 
-**Murat**
-- GitHub: [@YOUR_USERNAME](https://github.com/YOUR_USERNAME)
-- Email: muartmac@gmail.com
+**Murat (Ideloc Studio)**
+- GitHub: [@muartdev](https://github.com/muartdev)
+- Email: ideloc.studio@gmail.com
 
 ## 🙏 Acknowledgments
 
