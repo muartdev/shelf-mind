@@ -14,6 +14,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [showResend, setShowResend] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
   const navigate = useNavigate()
 
   async function handleSubmit(e) {
@@ -27,6 +29,7 @@ export default function Login() {
         const { error } = await supabase.auth.signUp({ email, password, options: { data: { name } } })
         if (error) throw error
         setMessage(t('login.checkEmail'))
+        setShowResend(true)
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
@@ -36,6 +39,24 @@ export default function Login() {
       setError(err.message || 'Something went wrong')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleResend() {
+    if (resendCooldown > 0) return
+    try {
+      const { error } = await supabase.auth.resend({ type: 'signup', email })
+      if (error) throw error
+      setMessage(t('login.resent'))
+      setResendCooldown(60)
+      const timer = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) { clearInterval(timer); return 0 }
+          return prev - 1
+        })
+      }, 1000)
+    } catch (err) {
+      setError(err.message || 'Failed to resend')
     }
   }
 
@@ -110,11 +131,26 @@ export default function Login() {
               </div>
             )}
             {message && (
-              <div className="flex items-start gap-2 text-green-500 text-xs sm:text-sm bg-green-500/10 border border-green-500/20 rounded-xl px-3.5 py-2.5">
-                <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {message}
+              <div className="text-green-500 text-xs sm:text-sm bg-green-500/10 border border-green-500/20 rounded-xl px-3.5 py-2.5">
+                <div className="flex items-start gap-2">
+                  <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {message}
+                </div>
+                {showResend && (
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendCooldown > 0}
+                    className="mt-2 text-xs font-medium transition disabled:opacity-50"
+                    style={{ color: theme.primary }}
+                  >
+                    {resendCooldown > 0
+                      ? `${t('login.resendWait')} (${resendCooldown}s)`
+                      : t('login.resend')}
+                  </button>
+                )}
               </div>
             )}
             <button
