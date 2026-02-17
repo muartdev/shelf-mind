@@ -310,9 +310,6 @@ struct PaywallView: View {
                 try await paywall.purchase(product)
                 dismiss()
             } catch {
-                #if DEBUG
-                print("❌ Purchase failed: \(error)")
-                #endif
                 errorMessage = localization.localizedString("paywall.failed")
             }
         }
@@ -325,9 +322,6 @@ struct PaywallView: View {
                 try await PaywallManager.shared.restorePurchases()
                 dismiss()
             } catch {
-                #if DEBUG
-                print("❌ Restore failed: \(error)")
-                #endif
                 errorMessage = localization.localizedString("paywall.failed")
             }
         }

@@ -487,10 +487,7 @@ struct BookmarkDetailView: View {
                 DispatchQueue.main.async {
                     showingReminderSheet = false
                 }
-            } else if let error = error {
-                #if DEBUG
-                print("Notification permission error: \(error.localizedDescription)")
-                #endif
+            } else if error != nil {
             }
         }
     }

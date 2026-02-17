@@ -68,3 +68,4 @@ File.txt
 *.cer
 *.der
 *.pfx
+package-lock.json

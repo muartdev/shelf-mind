@@ -496,21 +496,12 @@ struct AddBookmarkView: View {
             defer { isSaving = false }
             
             guard let userId = authManager.currentUser?.id else {
-                #if DEBUG
-                print("❌ No user ID found")
-                #endif
                 return
             }
             
             do {
                 try await supabaseManager.createBookmark(bookmark, userId: userId)
-                #if DEBUG
-                print("✅ Bookmark saved to Supabase")
-                #endif
             } catch {
-                #if DEBUG
-                print("❌ Failed to save bookmark to Supabase: \(error)")
-                #endif
                 // Still saved locally; queued for sync if possible
             }
         }
@@ -568,9 +559,6 @@ struct AddBookmarkView: View {
                     self.thumbnailURL = preview.imageURL
                 }
             } catch {
-                #if DEBUG
-                print("❌ Failed to load preview: \(error.localizedDescription)")
-                #endif
             }
         }
     }

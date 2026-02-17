@@ -463,9 +463,6 @@ struct ContentView: View {
     private func loadBookmarksFromSupabase() async {
         guard !isLoadingFromSupabase else { return }
         guard let userId = authManager.currentUser?.id else {
-            #if DEBUG
-            print("⚠️ No user logged in, skipping Supabase fetch")
-            #endif
             return
         }
         
@@ -474,10 +471,7 @@ struct ContentView: View {
         
         do {
             let supabaseBookmarks = try await supabaseManager.fetchBookmarks(userId: userId)
-            #if DEBUG
-            print("✅ Fetched \(supabaseBookmarks.count) bookmarks from Supabase")
-            #endif
-            
+
             // Sync to local SwiftData
             for dto in supabaseBookmarks {
                 let bookmarkId = dto.id
@@ -505,13 +499,7 @@ struct ContentView: View {
             }
             
             try modelContext.save()
-            #if DEBUG
-            print("✅ Synced bookmarks to local database")
-            #endif
         } catch {
-            #if DEBUG
-            print("❌ Failed to load bookmarks from Supabase: \(error)")
-            #endif
         }
     }
     
@@ -524,10 +512,6 @@ struct ContentView: View {
               !pendingBookmarks.isEmpty else {
             return
         }
-        
-        #if DEBUG
-        print("📥 Found \(pendingBookmarks.count) pending bookmarks from Share Extension")
-        #endif
         
         for bookmarkData in pendingBookmarks {
             guard let title = bookmarkData["title"] as? String,
@@ -577,13 +561,7 @@ struct ContentView: View {
                 Task {
                     do {
                         try await supabaseManager.createBookmark(bookmark, userId: userId)
-                        #if DEBUG
-                        print("✅ Synced shared bookmark to Supabase: \(title)")
-                        #endif
                     } catch {
-                        #if DEBUG
-                        print("❌ Failed to sync shared bookmark: \(error)")
-                        #endif
                     }
                 }
             }
@@ -592,10 +570,6 @@ struct ContentView: View {
         // Clear pending bookmarks
         defaults?.removeObject(forKey: "pendingBookmarks")
         defaults?.synchronize()
-        
-        #if DEBUG
-        print("✅ Imported \(pendingBookmarks.count) bookmarks from Share Extension")
-        #endif
 
         syncSavedURLsToAppGroup()
     }

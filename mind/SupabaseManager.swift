@@ -19,10 +19,12 @@ final class SupabaseManager {
     var lastSyncError: String?
     
     private init() {
-        // Initialize Supabase client with config
+        guard let url = Config.supabaseURL, let key = Config.supabaseAnonKey else {
+            fatalError("Supabase configuration missing. Ensure Config.xcconfig is properly linked in Build Settings.")
+        }
         self.client = SupabaseClient(
-            supabaseURL: Config.supabaseURL,
-            supabaseKey: Config.supabaseAnonKey,
+            supabaseURL: url,
+            supabaseKey: key,
             options: SupabaseClientOptions(
                 auth: .init(
                     emitLocalSessionAsInitialSession: true

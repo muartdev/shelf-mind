@@ -14,25 +14,29 @@ enum Config {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
     }
-    
-    static let supabaseURL: URL = {
+
+    static var isConfigured: Bool {
+        supabaseURL != nil && supabaseAnonKey != nil
+    }
+
+    static let supabaseURL: URL? = {
         guard let raw = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String else {
-            preconditionFailure("SUPABASE_URL not found. Add Config.xcconfig and link it in Build Settings.")
+            return nil
         }
         let urlString = sanitized(raw)
         guard !urlString.hasPrefix("$("), let url = URL(string: urlString), let host = url.host, !host.isEmpty else {
-            preconditionFailure("Invalid SUPABASE_URL. Check Config.xcconfig has SUPABASE_URL with full https://... URL.")
+            return nil
         }
         return url
     }()
-    
-    static let supabaseAnonKey: String = {
+
+    static let supabaseAnonKey: String? = {
         guard let raw = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_ANON_KEY") as? String else {
-            preconditionFailure("SUPABASE_ANON_KEY not found. Add Config.xcconfig and link it in Build Settings.")
+            return nil
         }
         let key = sanitized(raw)
         guard !key.hasPrefix("$("), !key.isEmpty else {
-            preconditionFailure("Invalid SUPABASE_ANON_KEY. Check Config.xcconfig has your project's anon key.")
+            return nil
         }
         return key
     }()

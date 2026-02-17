@@ -15,15 +15,37 @@
           <td style="padding:32px 32px 8px">
             <h2 style="margin:0 0 12px;color:#1a1a1a;font-size:21px;font-weight:700">Welcome to MindShelf! 🎉</h2>
             <p style="margin:0 0 16px;color:#555;font-size:15px;line-height:1.7">
-              You're one step away from organizing all your favorite content in one place. Confirm your email address to activate your account.
+              You're one step away from organizing all your favorite content in one place. Use the code below to verify your email address.
             </p>
+          </td>
+        </tr>
+        <!-- OTP Code -->
+        <tr>
+          <td align="center" style="padding:8px 32px 8px">
+            <p style="margin:0 0 8px;color:#888;font-size:13px">Your verification code:</p>
+            <div style="display:inline-block;padding:16px 40px;background:#FFF8F0;border:2px dashed #FF6B35;border-radius:14px;letter-spacing:8px;font-size:32px;font-weight:700;color:#1a1a1a;font-family:monospace">
+              {{ .Token }}
+            </div>
+            <p style="margin:10px 0 0;color:#999;font-size:12px">Enter this code in the app to confirm your account</p>
+          </td>
+        </tr>
+        <!-- OR divider -->
+        <tr>
+          <td style="padding:20px 32px">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="border-bottom:1px solid #eee;width:45%"></td>
+                <td style="text-align:center;padding:0 12px;color:#bbb;font-size:12px;white-space:nowrap">or</td>
+                <td style="border-bottom:1px solid #eee;width:45%"></td>
+              </tr>
+            </table>
           </td>
         </tr>
         <!-- Button -->
         <tr>
-          <td align="center" style="padding:8px 32px 28px">
-            <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:15px 44px;background:linear-gradient(135deg,#FF6B35,#FF2D55);color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;border-radius:14px;letter-spacing:0.2px">
-              Confirm My Email
+          <td align="center" style="padding:0 32px 28px">
+            <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#FF6B35,#FF2D55);color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:14px;letter-spacing:0.2px">
+              Confirm via Web
             </a>
           </td>
         </tr>
