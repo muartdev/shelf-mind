@@ -42,12 +42,40 @@ struct AuthView: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            
+
             ScrollView {
                 VStack(spacing: 32) {
+                    // Language switcher - top right
+                    HStack {
+                        Spacer()
+                        Menu {
+                            ForEach(LocalizationManager.AppLanguage.allCases) { language in
+                                Button(action: {
+                                    withAnimation(.smooth) {
+                                        localization.currentLanguage = language
+                                    }
+                                }) {
+                                    HStack {
+                                        Text("\(language.flag) \(language.rawValue)")
+                                        if localization.currentLanguage == language {
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                            }
+                        } label: {
+                            Text(localization.currentLanguage.flag)
+                                .font(.title2)
+                                .padding(8)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+
                     Spacer()
-                        .frame(height: 60)
-                    
+                        .frame(height: 20)
+
                     // Logo and title
                     VStack(spacing: 16) {
                         Image("mindshelf_logo")
@@ -56,68 +84,17 @@ struct AuthView: View {
                             .frame(width: 96, height: 96)
                             .clipShape(RoundedRectangle(cornerRadius: 22))
                             .shadow(color: themeManager.currentTheme.primaryColor.opacity(0.3), radius: 16, x: 0, y: 8)
-                        
+
                         Text("MindShelf")
                             .font(.largeTitle)
                             .bold()
-                        
+
                         Text(localization.localizedString("auth.subtitle"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                     }
-                    
-                    // Language Switcher
-                    Menu {
-                        ForEach(LocalizationManager.AppLanguage.allCases) { language in
-                            Button(action: {
-                                withAnimation(.smooth) {
-                                    localization.currentLanguage = language
-                                }
-                            }) {
-                                HStack {
-                                    Text("\(language.flag) \(language.rawValue)")
-                                    if localization.currentLanguage == language {
-                                        Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "globe")
-                                .font(.subheadline)
-                            Text("\(localization.currentLanguage.flag) \(localization.currentLanguage.rawValue)")
-                                .font(.subheadline)
-                            Image(systemName: "chevron.up.chevron.down")
-                                .font(.caption2)
-                        }
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(.ultraThinMaterial, in: Capsule())
-                    }
-                    
-                    // Secure notice
-                    HStack(spacing: 8) {
-                        Image(systemName: "lock.shield.fill")
-                            .foregroundStyle(.green)
-                        Text(localization.localizedString("auth.secure"))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(
-                        .ultraThinMaterial,
-                        in: Capsule()
-                    )
-                    .overlay(
-                        Capsule()
-                            .strokeBorder(.primary.opacity(0.1), lineWidth: 1)
-                    )
-                    .shadow(color: .primary.opacity(0.08), radius: 8, y: 4)
-                    
+
                     // Form
                     VStack(spacing: 20) {
                         if authManager.needsEmailConfirmation {
