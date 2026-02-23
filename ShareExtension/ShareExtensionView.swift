@@ -451,6 +451,15 @@ struct ShareExtensionView: View {
     private func fetchPreview() {
         guard let requestURL = URL(string: url) else {
             isLoadingPreview = false
+            applyFallbackTitle()
+            return
+        }
+
+        let lowercasedURL = url.lowercased()
+
+        // X / Twitter: use oEmbed API (pages are JS-rendered, direct HTML scraping returns no og:title)
+        if lowercasedURL.contains("twitter.com/") || lowercasedURL.contains("x.com/") {
+            fetchTwitterOEmbed(tweetURL: url)
             return
         }
 
@@ -476,7 +485,10 @@ struct ShareExtensionView: View {
                 } else if let latin1 = String(data: data, encoding: .isoLatin1) {
                     html = latin1
                 } else {
-                    await MainActor.run { isLoadingPreview = false }
+                    await MainActor.run {
+                        isLoadingPreview = false
+                        applyFallbackTitle()
+                    }
                     return
                 }
 
@@ -491,8 +503,12 @@ struct ShareExtensionView: View {
                 )
 
                 await MainActor.run {
-                    if self.title.isEmpty, let fetchedTitle {
-                        self.title = fetchedTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if self.title.isEmpty {
+                        if let fetchedTitle {
+                            self.title = fetchedTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                        } else {
+                            applyFallbackTitle()
+                        }
                     }
                     if let imageURL, !imageURL.isEmpty {
                         self.previewImageURL = imageURL
@@ -500,8 +516,59 @@ struct ShareExtensionView: View {
                     isLoadingPreview = false
                 }
             } catch {
-                await MainActor.run { isLoadingPreview = false }
+                await MainActor.run {
+                    isLoadingPreview = false
+                    applyFallbackTitle()
+                }
             }
+        }
+    }
+
+    /// Fetch title for X/Twitter URLs via the public oEmbed API (no auth required).
+    private func fetchTwitterOEmbed(tweetURL: String) {
+        guard let encoded = tweetURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let oembedURL = URL(string: "https://publish.twitter.com/oembed?url=\(encoded)&omit_script=true") else {
+            isLoadingPreview = false
+            applyFallbackTitle()
+            return
+        }
+
+        Task {
+            do {
+                let config = URLSessionConfiguration.default
+                config.timeoutIntervalForRequest = 8
+                let session = URLSession(configuration: config)
+
+                let (data, _) = try await session.data(from: oembedURL)
+
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let authorName = json["author_name"] as? String {
+                    await MainActor.run {
+                        if self.title.isEmpty {
+                            self.title = "Tweet by @\(authorName)"
+                        }
+                        isLoadingPreview = false
+                    }
+                } else {
+                    await MainActor.run {
+                        isLoadingPreview = false
+                        applyFallbackTitle()
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isLoadingPreview = false
+                    applyFallbackTitle()
+                }
+            }
+        }
+    }
+
+    /// Sets a host-based title as last resort so the Save button is never blocked by an empty title.
+    private func applyFallbackTitle() {
+        guard title.isEmpty else { return }
+        if let host = URL(string: url)?.host?.replacingOccurrences(of: "www.", with: "") {
+            title = host
         }
     }
 
