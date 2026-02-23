@@ -69,13 +69,13 @@ struct SettingsView: View {
             .sheet(isPresented: $showingPaywallForTheme) {
                 PaywallView()
             }
-            .confirmationDialog("Delete All Bookmarks", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
-                Button("Delete All", role: .destructive) {
+            .confirmationDialog(localization.localizedString("settings.delete.all"), isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+                Button(localization.localizedString("settings.delete.all.confirm"), role: .destructive) {
                     deleteAllBookmarks()
                 }
-                Button("Cancel", role: .cancel) { }
+                Button(localization.localizedString("common.cancel"), role: .cancel) { }
             } message: {
-                Text("This action cannot be undone. All your bookmarks will be permanently deleted.")
+                Text(localization.localizedString("settings.delete.all.message"))
             }
 .confirmationDialog(localization.localizedString("settings.delete.account"), isPresented: $showingDeleteAccountConfirmation, titleVisibility: .visible) {
                 Button(localization.localizedString("settings.delete.confirm"), role: .destructive) {

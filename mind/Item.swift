@@ -50,82 +50,11 @@ final class Bookmark {
 
 extension Bookmark {
     static func dedupeKey(_ urlString: String) -> String {
-        let normalized = normalizedURLString(urlString)
-        if let tweetID = tweetID(from: normalized) {
-            return "tweet:\(tweetID)"
-        }
-        return normalized
-    }
-
-    private static func tweetID(from urlString: String) -> String? {
-        guard let url = URL(string: urlString),
-              let host = url.host?.lowercased(),
-              host.contains("twitter.com") || host.contains("x.com") else {
-            return nil
-        }
-
-        let parts = url.path.split(separator: "/").map(String.init)
-        for (index, part) in parts.enumerated() {
-            if part == "status" || part == "statuses" {
-                let nextIndex = index + 1
-                guard nextIndex < parts.count else { continue }
-                let id = parts[nextIndex]
-                if !id.isEmpty, id.allSatisfy({ $0.isNumber }) {
-                    return id
-                }
-            }
-        }
-
-        if let iIndex = parts.firstIndex(of: "i"), iIndex + 2 < parts.count, parts[iIndex + 1] == "status" {
-            let id = parts[iIndex + 2]
-            if !id.isEmpty, id.allSatisfy({ $0.isNumber }) {
-                return id
-            }
-        }
-
-        return nil
+        BookmarkURLNormalizer.dedupeKey(urlString)
     }
 
     static func normalizedURLString(_ urlString: String) -> String {
-        let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard var components = URLComponents(string: trimmed) else {
-            return trimmed.lowercased()
-        }
-        
-        components.fragment = nil
-        if let scheme = components.scheme?.lowercased() {
-            components.scheme = scheme
-        }
-        if let host = components.host?.lowercased() {
-            var normalizedHost = host
-            if normalizedHost.hasPrefix("www.") {
-                normalizedHost.removeFirst(4)
-            }
-            components.host = normalizedHost
-        }
-        if let port = components.port {
-            if (components.scheme == "http" && port == 80) || (components.scheme == "https" && port == 443) {
-                components.port = nil
-            }
-        }
-        
-        var path = components.path
-        if path.count > 1, path.hasSuffix("/") {
-            path.removeLast()
-            components.path = path
-        }
-        
-        if var items = components.queryItems {
-            let trackingParams: Set<String> = [
-                "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
-                "fbclid", "gclid", "igshid"
-            ]
-            items = items.filter { !trackingParams.contains($0.name.lowercased()) }
-            items.sort { ($0.name, $0.value ?? "") < ($1.name, $1.value ?? "") }
-            components.queryItems = items.isEmpty ? nil : items
-        }
-        
-        return components.string ?? trimmed.lowercased()
+        BookmarkURLNormalizer.normalizedURLString(urlString)
     }
 }
 

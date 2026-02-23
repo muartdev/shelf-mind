@@ -4,23 +4,29 @@ import PackageDescription
 let package = Package(
     name: "MindShelf",
     platforms: [
-        .iOS(.v17)
+        .iOS(.v17),
+        .macOS(.v14)
     ],
     products: [
         .library(
-            name: "MindShelf",
-            targets: ["MindShelf"]
+            name: "MindShelfCore",
+            targets: ["MindShelfCore"]
         )
     ],
     dependencies: [
         .package(url: "https://github.com/supabase/supabase-swift", from: "2.0.0")
     ],
     targets: [
+        // Pure Foundation utilities — no SwiftUI/SwiftData/StoreKit
         .target(
-            name: "MindShelf",
-            dependencies: [
-                .product(name: "Supabase", package: "supabase-swift")
-            ]
+            name: "MindShelfCore",
+            dependencies: [],
+            path: "Sources/MindShelfCore"
+        ),
+        .testTarget(
+            name: "MindShelfCoreTests",
+            dependencies: ["MindShelfCore"],
+            path: "Tests/MindShelfCoreTests"
         )
     ]
 )

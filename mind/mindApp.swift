@@ -17,6 +17,7 @@ struct mindApp: App {
     @State private var localizationManager = LocalizationManager.shared
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var showDatabaseError = false
+    @State private var showConfigError = false
 
     let sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -74,16 +75,26 @@ struct mindApp: App {
             .preferredColorScheme(themeManager.currentTheme.isDark ? .dark : .light)
             .tint(themeManager.currentTheme.accentColor)
             .task {
+                // Warn if Supabase config is missing
+                if !SupabaseManager.shared.isConfigured {
+                    showConfigError = true
+                    return
+                }
                 await authManager.loadCurrentUser()
                 // Warn if running on fallback in-memory store
                 if sharedModelContainer.configurations.first?.isStoredInMemoryOnly == true {
                     showDatabaseError = true
                 }
             }
-            .alert("Database Error", isPresented: $showDatabaseError) {
-                Button("OK", role: .cancel) {}
+            .alert(LocalizationManager.shared.localizedString("error.config.title"), isPresented: $showConfigError) {
+                Button(LocalizationManager.shared.localizedString("common.done"), role: .cancel) {}
             } message: {
-                Text("Local storage could not be loaded. Your data will not be saved between sessions. Please restart the app.")
+                Text(LocalizationManager.shared.localizedString("error.config.message"))
+            }
+            .alert(LocalizationManager.shared.localizedString("error.database.title"), isPresented: $showDatabaseError) {
+                Button(LocalizationManager.shared.localizedString("common.done"), role: .cancel) {}
+            } message: {
+                Text(LocalizationManager.shared.localizedString("error.database.message"))
             }
         }
         .modelContainer(sharedModelContainer)

@@ -10,29 +10,32 @@ import SwiftUI
 struct OnboardingView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(ThemeManager.self) private var themeManager
+    @Environment(LocalizationManager.self) private var localization
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var currentPage = 0
-    
-    private let pages: [OnboardingPage] = [
-        OnboardingPage(
-            icon: "bookmark.fill",
-            title: "Save Anything",
-            description: "Bookmark articles, videos, and tweets from X. Never lose track of interesting content again.",
-            color: .blue
-        ),
-        OnboardingPage(
-            icon: "folder.fill",
-            title: "Stay Organized",
-            description: "Simple categories and tags keep everything in its place. Find what you need, when you need it.",
-            color: .purple
-        ),
-        OnboardingPage(
-            icon: "sparkles",
-            title: "Read Later",
-            description: "Mark as read, track your progress. Turn saved content into knowledge.",
-            color: .green
-        )
-    ]
+
+    private var pages: [OnboardingPage] {
+        [
+            OnboardingPage(
+                icon: "bookmark.fill",
+                title: localization.localizedString("onboarding.page1.title"),
+                description: localization.localizedString("onboarding.page1.desc"),
+                color: .blue
+            ),
+            OnboardingPage(
+                icon: "folder.fill",
+                title: localization.localizedString("onboarding.page2.title"),
+                description: localization.localizedString("onboarding.page2.desc"),
+                color: .purple
+            ),
+            OnboardingPage(
+                icon: "sparkles",
+                title: localization.localizedString("onboarding.page3.title"),
+                description: localization.localizedString("onboarding.page3.desc"),
+                color: .green
+            )
+        ]
+    }
     
     var body: some View {
         ZStack {
@@ -50,7 +53,7 @@ struct OnboardingView: View {
                 HStack {
                     Spacer()
                     if currentPage < pages.count - 1 {
-                        Button("Skip") {
+                        Button(localization.localizedString("onboarding.skip")) {
                             completeOnboarding()
                         }
                         .foregroundStyle(.secondary)
@@ -113,7 +116,7 @@ struct OnboardingView: View {
                 
                 // Next/Get Started button
                 Button(action: nextPage) {
-                    Text(currentPage == pages.count - 1 ? "Get Started" : "Next")
+                    Text(currentPage == pages.count - 1 ? localization.localizedString("onboarding.start") : localization.localizedString("onboarding.next"))
                         .font(.headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)

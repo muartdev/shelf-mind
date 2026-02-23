@@ -168,7 +168,7 @@ mind/
 
 ### `Config.swift`
 - Safely reads config values from `Info.plist`
-- Crashes gracefully if keys are missing
+- Shows a user-friendly error if configuration keys are missing
 
 ## 🚧 Roadmap
 

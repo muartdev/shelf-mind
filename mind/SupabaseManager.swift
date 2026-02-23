@@ -18,9 +18,18 @@ final class SupabaseManager {
     private let pendingOpsKey = "pendingBookmarkOps"
     var lastSyncError: String?
     
+    private(set) var isConfigured: Bool = false
+
     private init() {
         guard let url = Config.supabaseURL, let key = Config.supabaseAnonKey else {
-            fatalError("Supabase configuration missing. Ensure Config.xcconfig is properly linked in Build Settings.")
+            // Configuration missing — use a placeholder client so the app doesn't crash.
+            // mindApp will detect isConfigured == false and show an error banner.
+            self.client = SupabaseClient(
+                supabaseURL: URL(string: "https://placeholder.supabase.co")!,
+                supabaseKey: "placeholder"
+            )
+            self.isConfigured = false
+            return
         }
         self.client = SupabaseClient(
             supabaseURL: url,
@@ -31,6 +40,7 @@ final class SupabaseManager {
                 )
             )
         )
+        self.isConfigured = true
     }
     
     // MARK: - Authentication

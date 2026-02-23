@@ -121,7 +121,7 @@ struct AuthView: View {
                             
                             SecureField(localization.localizedString("auth.password"), text: $password)
                                 .textFieldStyle()
-                                .textContentType(.oneTimeCode)
+                                .textContentType(.password)
                                 .focused($focusedField, equals: .password)
                                 .submitLabel(.done)
                                 .onSubmit { focusedField = nil }

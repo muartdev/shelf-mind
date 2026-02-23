@@ -126,7 +126,16 @@ struct ContentView: View {
                 )
                 .ignoresSafeArea()
                 
-                if filteredBookmarks.isEmpty {
+                if isLoadingFromSupabase && bookmarks.isEmpty {
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.4)
+                        Text(localization.localizedString("common.loading"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if filteredBookmarks.isEmpty {
                     EmptyStateView(
                         icon: selectedCategory != nil || showOnlyUnread || showOnlyFavorites ? "tray" : "bookmark.slash",
                         title: emptyStateTitle,

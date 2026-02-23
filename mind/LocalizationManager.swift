@@ -145,7 +145,14 @@ struct LocalizedStrings {
         "stats.categories": "Categories",
         "stats.types": "types",
         "stats.bookmarks": "bookmarks",
-        
+        "stats.insights": "Insights",
+        "stats.pace": "Pace",
+        "stats.most.active": "Most Active",
+        "stats.streak": "Streak",
+        "stats.streak.days": "%d days",
+        "stats.no.streak": "Start reading!",
+        "stats.bookmarks.week": "bookmarks/week",
+
         // Settings
         "settings.title": "Settings",
         "settings.account": "Account",
@@ -246,7 +253,11 @@ struct LocalizedStrings {
         "settings.delete.account": "Delete Account",
         "settings.delete.account.message": "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.",
         "settings.delete.confirm": "Delete My Account",
-        
+
+        // Delete All Bookmarks
+        "settings.delete.all.confirm": "Delete All",
+        "settings.delete.all.message": "This action cannot be undone. All your bookmarks will be permanently deleted.",
+
         // Themes
         "theme.blue.purple": "Blue Purple",
         "theme.orange.pink": "Orange Pink",
@@ -330,6 +341,23 @@ struct LocalizedStrings {
         // Notifications
         "notification.daily.body": "Check out your bookmarks and catch up on your reading!",
 
+        // Onboarding
+        "onboarding.page1.title": "Save Anything",
+        "onboarding.page1.desc": "Bookmark articles, videos, and posts from X. Never lose track of interesting content again.",
+        "onboarding.page2.title": "Stay Organized",
+        "onboarding.page2.desc": "Simple categories and tags keep everything in its place. Find what you need, when you need it.",
+        "onboarding.page3.title": "Read Later",
+        "onboarding.page3.desc": "Mark as read, track your progress. Turn saved content into knowledge.",
+        "onboarding.skip": "Skip",
+        "onboarding.next": "Next",
+        "onboarding.start": "Get Started",
+
+        // App Errors
+        "error.config.title": "Configuration Error",
+        "error.config.message": "App configuration is missing. Please contact support.",
+        "error.database.title": "Database Error",
+        "error.database.message": "Local storage could not be loaded. Your data will not be saved between sessions. Please restart the app.",
+
         // URL Preview Premium Upsell
         "preview.premium.title": "URL Preview is a Premium feature",
         "preview.premium.desc": "Upgrade to get automatic title & image extraction for all bookmarks",
@@ -405,7 +433,14 @@ struct LocalizedStrings {
         "stats.categories": "Kategoriler",
         "stats.types": "tip",
         "stats.bookmarks": "yer imi",
-        
+        "stats.insights": "İçgörüler",
+        "stats.pace": "Hız",
+        "stats.most.active": "En Aktif",
+        "stats.streak": "Seri",
+        "stats.streak.days": "%d gün",
+        "stats.no.streak": "Okumaya başla!",
+        "stats.bookmarks.week": "yer imi/hafta",
+
         // Settings
         "settings.title": "Ayarlar",
         "settings.account": "Hesap",
@@ -506,7 +541,11 @@ struct LocalizedStrings {
         "settings.delete.account": "Hesabı Sil",
         "settings.delete.account.message": "Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm verileriniz kalıcı olarak silinecektir.",
         "settings.delete.confirm": "Hesabımı Sil",
-        
+
+        // Delete All Bookmarks
+        "settings.delete.all.confirm": "Tümünü Sil",
+        "settings.delete.all.message": "Bu işlem geri alınamaz. Tüm yer imleriniz kalıcı olarak silinecektir.",
+
         // Themes
         "theme.blue.purple": "Mavi Mor",
         "theme.orange.pink": "Turuncu Pembe",
@@ -589,6 +628,23 @@ struct LocalizedStrings {
 
         // Notifications
         "notification.daily.body": "Yer imlerini kontrol et ve okumalarına devam et!",
+
+        // Onboarding
+        "onboarding.page1.title": "Her Şeyi Kaydet",
+        "onboarding.page1.desc": "Makaleler, videolar ve X gönderilerini kaydet. İlginç içerikleri bir daha kaybetme.",
+        "onboarding.page2.title": "Düzenli Kal",
+        "onboarding.page2.desc": "Basit kategoriler ve etiketler her şeyi yerli yerinde tutar. İhtiyacın olanı, ihtiyacın olduğunda bul.",
+        "onboarding.page3.title": "Sonra Oku",
+        "onboarding.page3.desc": "Okundu olarak işaretle, ilerleni takip et. Kaydettiğin içerikleri bilgiye dönüştür.",
+        "onboarding.skip": "Geç",
+        "onboarding.next": "İleri",
+        "onboarding.start": "Başla",
+
+        // App Errors
+        "error.config.title": "Yapılandırma Hatası",
+        "error.config.message": "Uygulama yapılandırması eksik. Lütfen destek ile iletişime geçin.",
+        "error.database.title": "Veritabanı Hatası",
+        "error.database.message": "Yerel depolama yüklenemedi. Verileriniz oturumlar arasında kaydedilmeyecek. Lütfen uygulamayı yeniden başlatın.",
 
         // URL Preview Premium Upsell
         "preview.premium.title": "URL Önizleme Premium özelliği",

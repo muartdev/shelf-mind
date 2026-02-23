@@ -69,3 +69,8 @@ File.txt
 *.der
 *.pfx
 package-lock.json
+web/package-lock.json
+
+# Claude / local tooling
+.claude/
+web/.claude/
