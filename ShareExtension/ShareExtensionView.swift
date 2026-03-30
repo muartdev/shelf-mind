@@ -47,8 +47,10 @@ struct ShareExtensionView: View {
         _title = State(initialValue: suggestedTitle ?? "")
     }
 
+    /// Allow save when user is signed in to Supabase or using on-device-only (guest) mode.
     private var isSignedIn: Bool {
-        UserDefaults(suiteName: "group.com.muartdev.mind")?.bool(forKey: "isAuthenticated") ?? false
+        let d = UserDefaults(suiteName: "group.com.muartdev.mind")
+        return (d?.bool(forKey: "isAuthenticated") ?? false) || (d?.bool(forKey: "isGuestMode") ?? false)
     }
 
     var body: some View {

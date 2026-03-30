@@ -14,24 +14,22 @@ import StoreKit
 final class PaywallManager {
     static let shared = PaywallManager()
     
-    // Premium status - StoreKit is the source of truth, database is fallback only
+    /// App Store Guideline 3.1.1: premium on iOS is unlocked only via In-App Purchase (StoreKit).
+    /// Server `is_premium` is not used to grant access on iOS.
     private(set) var isPremium: Bool = false
     private(set) var premiumSource: PremiumSource = .none
-    private var isPremiumFromDatabase: Bool = false
-    private var databaseExpirationDate: Date?
-    private var databasePurchaseDate: Date?
 
     enum PremiumSource: String {
         case none
         case storeKit
-        case database
     }
-    
+
     var isLifetime: Bool {
-        if let transaction = lastVerifiedTransaction {
-            return ProductID(rawValue: transaction.productID) == .lifetime
+        guard let transaction = lastVerifiedTransaction,
+              ProductID(rawValue: transaction.productID) == .lifetime else {
+            return false
         }
-        return isPremium && premiumExpirationDate == nil && databaseExpirationDate == nil
+        return true
     }
     
     private var lastVerifiedTransaction: StoreKit.Transaction?
@@ -177,11 +175,11 @@ final class PaywallManager {
     
     // Premium details
     var premiumExpirationDate: Date? {
-        lastVerifiedTransaction?.expirationDate ?? databaseExpirationDate
+        lastVerifiedTransaction?.expirationDate
     }
-    
+
     var premiumPurchaseDate: Date? {
-        lastVerifiedTransaction?.purchaseDate ?? databasePurchaseDate
+        lastVerifiedTransaction?.purchaseDate
     }
     
     // MARK: - Check Premium Status
@@ -211,13 +209,9 @@ final class PaywallManager {
         // Apply StoreKit results
         self.lastVerifiedTransaction = latestTransaction
         
-        // FINAL STATUS: StoreKit is primary, database is fallback
         if hasPremiumStoreKit {
             self.isPremium = true
             self.premiumSource = .storeKit
-        } else if isPremiumFromDatabase {
-            self.isPremium = true
-            self.premiumSource = .database
         } else {
             self.isPremium = false
             self.premiumSource = .none
@@ -240,17 +234,6 @@ final class PaywallManager {
             }
         }
         
-    }
-    
-    func setPremiumFromDatabase(isPremium: Bool, expirationDate: Date?, purchaseDate: Date?) {
-        self.isPremiumFromDatabase = isPremium
-        self.databaseExpirationDate = expirationDate
-        self.databasePurchaseDate = purchaseDate
-        
-        // Re-evaluate overall status
-        Task {
-            await updatePremiumStatus()
-        }
     }
     
     // MARK: - Transaction Listener

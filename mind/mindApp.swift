@@ -60,8 +60,8 @@ struct mindApp: App {
                 if !hasCompletedOnboarding {
                     // First: Show onboarding
                     OnboardingView()
-                } else if authManager.isAuthenticated {
-                    // Then: If logged in, show main app
+                } else if authManager.isAuthenticated || authManager.isGuestMode {
+                    // Account optional: full local app without sign-in (5.1.1); sign-in adds cloud sync.
                     MainTabView()
                 } else {
                     // Otherwise: Show auth screen
@@ -75,7 +75,13 @@ struct mindApp: App {
             .preferredColorScheme(themeManager.currentTheme.isDark ? .dark : .light)
             .tint(themeManager.currentTheme.accentColor)
             .task {
-                // Warn if Supabase config is missing
+                if authManager.isGuestMode {
+                    // Guest uses local SwiftData only; Supabase optional until sign-in
+                    if sharedModelContainer.configurations.first?.isStoredInMemoryOnly == true {
+                        showDatabaseError = true
+                    }
+                    return
+                }
                 if !SupabaseManager.shared.isConfigured {
                     showConfigError = true
                     return

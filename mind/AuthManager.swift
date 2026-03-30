@@ -8,10 +8,14 @@
 import Foundation
 import SwiftUI
 
+private let guestModeKey = "isGuestMode"
+
 @Observable
 @MainActor
 final class AuthManager {
     var isAuthenticated = false
+    /// Local-only use without an account (Guideline 5.1.1). Cloud sync requires sign-in.
+    var isGuestMode = false
     var currentUser: User?
     var isLoading = false
     var error: String?
@@ -22,7 +26,23 @@ final class AuthManager {
     private let supabase = SupabaseManager.shared
     
     init() {
+        isGuestMode = UserDefaults.standard.bool(forKey: guestModeKey)
         setupLanguageSync()
+    }
+
+    /// Use the app with on-device bookmarks only; sign in later for sync.
+    func continueAsGuest() {
+        isGuestMode = true
+        UserDefaults.standard.set(true, forKey: guestModeKey)
+        let group = UserDefaults(suiteName: "group.com.muartdev.mind")
+        group?.set(true, forKey: guestModeKey)
+    }
+
+    func exitGuestMode() {
+        isGuestMode = false
+        UserDefaults.standard.removeObject(forKey: guestModeKey)
+        let group = UserDefaults(suiteName: "group.com.muartdev.mind")
+        group?.removeObject(forKey: guestModeKey)
     }
     
     private func setupLanguageSync() {
@@ -48,14 +68,8 @@ final class AuthManager {
             currentUser = user
             isAuthenticated = true
             saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
-            
-            // Sync premium status from DB
-            PaywallManager.shared.setPremiumFromDatabase(
-                isPremium: user.isPremium,
-                expirationDate: user.premiumUntil,
-                purchaseDate: user.premiumPurchaseDate
-            )
-            
+            exitGuestMode()
+
             // Apply language preference
             if let language = LocalizationManager.AppLanguage.allCases.first(where: { $0.code == user.languageCode }) {
                 LocalizationManager.shared.currentLanguage = language
@@ -99,14 +113,8 @@ final class AuthManager {
             
             isAuthenticated = true
             saveSession(userId: result.user.id.uuidString, email: result.user.email, name: result.user.name)
-            
-            // New user is free by default, but update anyway
-            PaywallManager.shared.setPremiumFromDatabase(
-                isPremium: result.user.isPremium,
-                expirationDate: result.user.premiumUntil,
-                purchaseDate: result.user.premiumPurchaseDate
-            )
-            
+            exitGuestMode()
+
             await SupabaseManager.shared.syncPendingOperations()
         } catch {
             self.error = error.localizedDescription
@@ -117,9 +125,10 @@ final class AuthManager {
         Task {
             try? await supabase.signOut()
         }
-        
+
         currentUser = nil
         isAuthenticated = false
+        exitGuestMode()
         needsEmailConfirmation = false
         pendingEmail = nil
         infoKey = nil
@@ -157,14 +166,8 @@ final class AuthManager {
                 pendingEmail = nil
                 infoKey = nil
                 saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
+                exitGuestMode()
 
-                // Sync premium status from DB
-                PaywallManager.shared.setPremiumFromDatabase(
-                    isPremium: user.isPremium,
-                    expirationDate: user.premiumUntil,
-                    purchaseDate: user.premiumPurchaseDate
-                )
-                
                 // Apply language preference
                 if let language = LocalizationManager.AppLanguage.allCases.first(where: { $0.code == user.languageCode }) {
                     LocalizationManager.shared.currentLanguage = language
@@ -237,13 +240,8 @@ final class AuthManager {
                 needsEmailConfirmation = false
                 pendingEmail = nil
                 saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
-                
-                PaywallManager.shared.setPremiumFromDatabase(
-                    isPremium: user.isPremium,
-                    expirationDate: user.premiumUntil,
-                    purchaseDate: user.premiumPurchaseDate
-                )
-                
+                exitGuestMode()
+
                 if let language = LocalizationManager.AppLanguage.allCases.first(where: { $0.code == user.languageCode }) {
                     LocalizationManager.shared.currentLanguage = language
                 }

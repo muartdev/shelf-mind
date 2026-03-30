@@ -120,6 +120,26 @@ struct SettingsView: View {
             }
             .padding()
             .settingsCardStyle()
+        } else if authManager.isGuestMode {
+            VStack(alignment: .leading, spacing: 10) {
+                Label(localization.localizedString("settings.guest.headline"), systemImage: "iphone")
+                    .font(.headline)
+                Text(localization.localizedString("settings.guest.detail"))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Button {
+                    authManager.exitGuestMode()
+                } label: {
+                    Text(localization.localizedString("settings.signin.cta"))
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(themeManager.currentTheme.primaryColor)
+            }
+            .padding()
+            .settingsCardStyle()
         }
     }
 
@@ -194,27 +214,6 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
 
             HStack {
-                Label(localization.localizedString("settings.language"), systemImage: "globe")
-                Spacer()
-                Picker("", selection: Binding(
-                    get: { localization.currentLanguage },
-                    set: { newLang in
-                        withAnimation(.smooth) {
-                            LocalizationManager.shared.currentLanguage = newLang
-                        }
-                    }
-                )) {
-                    ForEach(LocalizationManager.AppLanguage.allCases) { language in
-                        Text("\(language.flag) \(language.rawValue)").tag(language)
-                    }
-                }
-                .pickerStyle(.menu)
-                .tint(.secondary)
-            }
-
-            Divider()
-
-            HStack {
                 Text(localization.localizedString("settings.version"))
                 Spacer()
                 Text(appVersion)
@@ -244,6 +243,28 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+
+            Divider()
+
+            // Language - moved to bottom
+            HStack {
+                Label(localization.localizedString("settings.language"), systemImage: "globe")
+                Spacer()
+                Picker("", selection: Binding(
+                    get: { localization.currentLanguage },
+                    set: { newLang in
+                        withAnimation(.smooth) {
+                            LocalizationManager.shared.currentLanguage = newLang
+                        }
+                    }
+                )) {
+                    ForEach(LocalizationManager.AppLanguage.allCases) { language in
+                        Text("\(language.flag) \(language.rawValue)").tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
+                .tint(.secondary)
+            }
         }
         .padding()
         .settingsCardStyle()
@@ -251,22 +272,29 @@ struct SettingsView: View {
 
     // MARK: - Sign Out Section
 
+    @ViewBuilder
     private var signOutSection: some View {
-        VStack(spacing: 12) {
-            Button(role: .destructive, action: signOut) {
-                Text(localization.localizedString("settings.signout"))
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-            }
-            .settingsCardStyle()
+        if authManager.isGuestMode {
+            EmptyView()
+        } else {
+            VStack(spacing: 12) {
+                Button(role: .destructive, action: signOut) {
+                    Text(localization.localizedString("settings.signout"))
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                }
+                .settingsCardStyle()
 
-            Button(role: .destructive, action: { showingDeleteAccountConfirmation = true }) {
-                Text(localization.localizedString("settings.delete.account"))
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                if authManager.currentUser != nil {
+                    Button(role: .destructive, action: { showingDeleteAccountConfirmation = true }) {
+                        Text(localization.localizedString("settings.delete.account"))
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                    }
+                }
             }
         }
     }

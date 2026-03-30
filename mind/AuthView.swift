@@ -191,11 +191,36 @@ struct AuthView: View {
                                 .foregroundStyle(.secondary)
                             }
                         }
-                        Button(action: { withAnimation { isSignUp.toggle() } }) {
-                            Text(isSignUp ? localization.localizedString("auth.alreadyhave") : localization.localizedString("auth.donthave"))
-                                .font(.subheadline)
+                        if !authManager.needsEmailConfirmation {
+                            Button(action: { withAnimation { isSignUp.toggle() } }) {
+                                Text(isSignUp ? localization.localizedString("auth.alreadyhave") : localization.localizedString("auth.donthave"))
+                                    .font(.subheadline)
+                            }
+                            .foregroundStyle(.secondary)
+
+                            VStack(spacing: 8) {
+                                Text(localization.localizedString("auth.or"))
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+
+                                Button {
+                                    authManager.continueAsGuest()
+                                } label: {
+                                    Text(localization.localizedString("auth.continue.guest"))
+                                        .font(.subheadline.weight(.medium))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 14)
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(themeManager.currentTheme.primaryColor)
+
+                                Text(localization.localizedString("auth.continue.guest.hint"))
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.top, 4)
                         }
-                        .foregroundStyle(.secondary)
                     }
                     .padding(24)
                     .background(

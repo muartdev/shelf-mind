@@ -345,18 +345,37 @@ struct BookmarkDetailView: View {
                 action: openURL
             )
             
-            actionButton(
-                title: localization.localizedString("detail.share"),
-                icon: "square.and.arrow.up",
-                color: .orange,
-                action: shareBookmark
-            )
+            shareButton
             
             actionButton(
                 title: localization.localizedString("detail.set.reminder"),
                 icon: "bell",
                 color: .purple,
                 action: { showingReminderSheet = true }
+            )
+        }
+    }
+    
+    @ViewBuilder
+    private var shareButton: some View {
+        if let url = URL(string: bookmark.url) {
+            ShareLink(item: url, subject: Text(bookmark.title), message: Text(bookmark.title)) {
+                HStack {
+                    Image(systemName: "square.and.arrow.up")
+                    Text(localization.localizedString("detail.share"))
+                    Spacer()
+                }
+                .font(.headline)
+                .padding()
+            }
+            .foregroundStyle(.orange)
+            .actionButtonStyle()
+        } else {
+            actionButton(
+                title: localization.localizedString("detail.share"),
+                icon: "square.and.arrow.up",
+                color: .orange,
+                action: shareBookmark
             )
         }
     }

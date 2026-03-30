@@ -130,6 +130,21 @@ enum Category: String, CaseIterable, Identifiable {
         case .general: return .gray
         }
     }
+    
+    /// Auto-detect category from URL host
+    static func fromURL(_ urlString: String) -> Category {
+        guard let url = URL(string: urlString),
+              let host = url.host?.lowercased() else { return .general }
+        
+        if host.contains("youtube") || host.contains("youtu.be") { return .youtube }
+        if host.contains("instagram") { return .instagram }
+        if host.contains("twitter") || host.contains("x.com") { return .twitter }
+        if host.contains("tiktok") || host.contains("vimeo") || host.contains("twitch") { return .video }
+        if host.contains("medium") || host.contains("substack") || host.contains("dev.to") ||
+           host.contains("github") || host.contains("stackoverflow") || host.contains("reddit") { return .article }
+        
+        return .general
+    }
 }
 
 extension Array where Element == Bookmark {

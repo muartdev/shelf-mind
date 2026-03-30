@@ -179,6 +179,9 @@ struct LocalizedStrings {
         "settings.premium.desc": "Unlimited bookmarks, URL preview & more",
         "settings.premium.from": "From",
         "settings.signout": "Sign Out",
+        "settings.guest.headline": "On-device only",
+        "settings.guest.detail": "Bookmarks are stored on this iPhone. Sign in to sync across devices and the web app.",
+        "settings.signin.cta": "Sign in or create account",
         
         // Premium
         "premium.title": "Unlock Premium",
@@ -216,6 +219,9 @@ struct LocalizedStrings {
         "auth.name": "Name",
         "auth.donthave": "Don't have an account? Sign Up",
         "auth.alreadyhave": "Already have an account? Sign In",
+        "auth.or": "or",
+        "auth.continue.guest": "Continue without account",
+        "auth.continue.guest.hint": "Bookmarks are saved on this device only. Sign in anytime to sync with the web and other devices.",
         "auth.secure": "Secure Authentication with Supabase",
         "auth.subtitle": "Save and organize your favorite content",
         
@@ -467,6 +473,9 @@ struct LocalizedStrings {
         "settings.premium.desc": "Sınırsız yer imi, URL önizleme ve daha fazlası",
         "settings.premium.from": "İtibaren",
         "settings.signout": "Çıkış Yap",
+        "settings.guest.headline": "Yalnızca bu cihazda",
+        "settings.guest.detail": "Yer imleri bu iPhone'da saklanır. Diğer cihazlar ve web uygulamasıyla senkron için giriş yap.",
+        "settings.signin.cta": "Giriş yap veya hesap oluştur",
         
         // Premium
         "premium.title": "Premium'u Aç",
@@ -504,6 +513,9 @@ struct LocalizedStrings {
         "auth.name": "Ad",
         "auth.donthave": "Hesabın yok mu? Kayıt Ol",
         "auth.alreadyhave": "Zaten hesabın var mı? Giriş Yap",
+        "auth.or": "veya",
+        "auth.continue.guest": "Hesap oluşturmadan devam et",
+        "auth.continue.guest.hint": "Yer imleri yalnızca bu cihazda saklanır. Web ve diğer cihazlarla senkron için istediğinde giriş yapabilirsin.",
         "auth.secure": "Supabase ile Güvenli Kimlik Doğrulama",
         "auth.subtitle": "Favori içeriklerini kaydet ve düzenle",
         

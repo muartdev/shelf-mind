@@ -89,10 +89,11 @@ struct AddBookmarkView: View {
                         .font(.body)
                         .onChange(of: url) { oldValue, newValue in
                             if newValue != oldValue && !newValue.isEmpty {
+                                // Auto-detect category from URL
+                                selectedCategory = Category.fromURL(newValue)
                                 if PaywallManager.shared.canUseURLPreview(currentCount: bookmarks.count) {
                                     loadURLPreview(for: newValue)
                                 }
-                                // Don't interrupt - the premium upsell card below handles the CTA
                             }
                         }
                     

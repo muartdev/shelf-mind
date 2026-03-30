@@ -11,7 +11,7 @@
 
 ### 3. App Store Gereksinimleri
 - **LICENSE** — README "MIT License - see LICENSE" diyor ama `LICENSE` dosyası yok. Eklenmeli.
-- **Privacy Policy URL** — `https://muartdev.github.io/mindshelf-privacy/` mevcut ve çalışıyor.
+- **Privacy Policy URL** — `https://muartdev.github.io/mindshelf-privacy/` Güncel metin bu repoda `privacy/index.html`; yayına almak için `mindshelf-privacy` GitHub repo’sundaki `index.html` ile değiştir (bkz. `APP_STORE_METADATA.md` → Deploy Privacy Policy).
 - **App Privacy (App Store Connect)** — Giriş yaptığında App Store Connect’te gizlilik etiketlerini doldur (Email, User ID, Purchase History vb.).
 
 ### 4. Info.plist Eksikleri

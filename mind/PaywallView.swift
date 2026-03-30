@@ -244,7 +244,9 @@ struct PaywallView: View {
                 )
             }
             .disabled(isPurchasing || selectedProduct == nil)
-            .opacity(isPurchasing || selectedProduct == nil ? 0.5 : 1.0)
+            .opacity(isPurchasing ? 0.8 : 1.0)
+            .scaleEffect(selectedProduct != nil ? 1.02 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedProduct != nil)
             .shadow(
                 color: themeManager.currentTheme.primaryColor.opacity(0.3),
                 radius: 10,
