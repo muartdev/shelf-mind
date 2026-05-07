@@ -57,14 +57,17 @@ struct mindApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if !hasCompletedOnboarding {
-                    // First: Show onboarding
+                switch AppStoreReviewPolicy.launchDestination(
+                    hasCompletedOnboarding: hasCompletedOnboarding,
+                    isAuthenticated: authManager.isAuthenticated,
+                    isGuestMode: authManager.isGuestMode,
+                    isRequestingAccountSignIn: authManager.isRequestingAccountSignIn
+                ) {
+                case .onboarding:
                     OnboardingView()
-                } else if authManager.isAuthenticated || authManager.isGuestMode {
-                    // Account optional: full local app without sign-in (5.1.1); sign-in adds cloud sync.
+                case .mainApp:
                     MainTabView()
-                } else {
-                    // Otherwise: Show auth screen
+                case .authentication:
                     AuthView()
                 }
             }
@@ -82,11 +85,38 @@ struct mindApp: App {
                     }
                     return
                 }
+
+                let hasStoredAccountSession = UserDefaults.standard.bool(forKey: "isAuthenticated")
+                if AppStoreReviewPolicy.shouldEnterGuestModeAfterLaunch(
+                    hasCompletedOnboarding: hasCompletedOnboarding,
+                    isAuthenticated: authManager.isAuthenticated || hasStoredAccountSession,
+                    isGuestMode: authManager.isGuestMode,
+                    isRequestingAccountSignIn: authManager.isRequestingAccountSignIn
+                ) {
+                    authManager.continueAsGuest()
+                    if sharedModelContainer.configurations.first?.isStoredInMemoryOnly == true {
+                        showDatabaseError = true
+                    }
+                    return
+                }
+
                 if !SupabaseManager.shared.isConfigured {
-                    showConfigError = true
+                    if authManager.isRequestingAccountSignIn || hasStoredAccountSession {
+                        showConfigError = true
+                    } else {
+                        authManager.continueAsGuest()
+                    }
                     return
                 }
                 await authManager.loadCurrentUser()
+                if AppStoreReviewPolicy.shouldEnterGuestModeAfterLaunch(
+                    hasCompletedOnboarding: hasCompletedOnboarding,
+                    isAuthenticated: authManager.isAuthenticated,
+                    isGuestMode: authManager.isGuestMode,
+                    isRequestingAccountSignIn: authManager.isRequestingAccountSignIn
+                ) {
+                    authManager.continueAsGuest()
+                }
                 // Warn if running on fallback in-memory store
                 if sharedModelContainer.configurations.first?.isStoredInMemoryOnly == true {
                     showDatabaseError = true

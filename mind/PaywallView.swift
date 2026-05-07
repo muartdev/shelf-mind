@@ -291,7 +291,7 @@ struct PaywallView: View {
                 Text("|")
                     .foregroundStyle(.secondary.opacity(0.5))
 
-                Link(localization.localizedString("settings.terms"), destination: URL(string: "https://muartdev.github.io/mindshelf-privacy/")!)
+                Link(localization.localizedString("settings.terms"), destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
             }
             .font(.caption)
             .foregroundStyle(.secondary)

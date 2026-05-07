@@ -3,8 +3,7 @@
 ## Kritik (Mutlaka Yapılmalı)
 
 ### 1. Gereksiz / Kullanılmayan Kod
-- **AuthManager.signInWithApple** — Sign in with Apple kaldırıldı ama fonksiyon hâlâ duruyor. Sil.
-- **SupabaseManager.signInWithApple** — Aynı şekilde kullanılmıyor, sil.
+- **Sign in with Apple kalıntıları** — Kodda aktif Sign in with Apple akışı bulunmamalı; privacy policy de bunu servis olarak listelememeli.
 
 ### 2. Gereksiz Dosyalar
 - **File.txt** — İçinde sadece bir Google image URL var, projede kullanılmıyor. Sil veya `.gitignore`'a ekle.
@@ -33,7 +32,7 @@
 - **Yükleme göstergeleri** — Uzun işlemlerde (sync, fetch) loading state’ler tutarlı mı?
 
 ### 7. Yerelleştirme
-- **auth.signin.apple** — LocalizationManager’da hâlâ var, Sign in with Apple kaldırıldığı için silinebilir.
+- **auth.signin.apple** — Sign in with Apple kaldırıldığı için localization içinde kalıntı varsa silinebilir.
 - **Eksik çeviriler** — Tüm kullanıcıya görünen metinler EN/TR için kontrol edilmeli.
 
 ### 8. Test
@@ -55,8 +54,9 @@
 - **xcschememanagement.plist** — `xcuserdata` içinde, kişisel ayar; genelde commit edilmez.
 
 ### 11. StoreKit / In-App Purchase
-- **Products.storekit** vs **MindShelf.storekit** — İki StoreKit config var; hangisinin kullanıldığını netleştir.
-- **EULA** — Products.storekit’te `"eula": ""` boş; gerekirse doldur.
+- **Products.storekit** — Xcode scheme StoreKit test config olarak kullanıyor; production bundle resource listesine eklenmemeli.
+- **EULA** — App içi Terms linki ve Products.storekit EULA değeri Apple Standard EULA URL’sini kullanmalı.
+- **Subscription management** — App içinde external subscription URL açılmamalı; StoreKit native subscription management sheet kullanılmalı.
 
 ### 12. Geliştirici Bilgileri
 - Privacy Policy’de **ideloc.studio@gmail.com** var.
@@ -69,7 +69,9 @@
 
 | Öncelik | Aksiyon |
 |---------|---------|
-| 🔴 | signInWithApple kodunu AuthManager ve SupabaseManager’dan sil |
+| 🟢 | App Review 5.1.1(v): onboarding sonrası local/guest erişimi zorunlu login olmadan aç |
+| 🟢 | App Review 3.1.1: external subscription URL yerine native StoreKit management sheet kullan |
+| 🟡 | Sign in with Apple kalıntılarını arada bir kontrol et |
 | 🔴 | File.txt’i sil veya .gitignore’a ekle |
 | 🔴 | LICENSE dosyası ekle (MIT) |
 | 🔴 | Info.plist’e ITSAppUsesNonExemptEncryption = NO ekle |

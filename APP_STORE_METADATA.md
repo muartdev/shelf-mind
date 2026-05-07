@@ -165,11 +165,13 @@ Ana ekran widget'ı son kayıtlarınızı her an görünür tutar.
 Use this in **App Store Connect → App Review Information → Notes** (adjust version if needed):
 
 ```
-Guideline 5.1.1(v): Users can tap “Continue without account” on the sign-in screen and use all core bookmark features with on-device storage only. Creating an account is optional and only needed for cloud sync and the web app.
+Guideline 5.1.1(v): After onboarding, the app now opens directly into the bookmark manager without requiring registration or login. Users can save, organize, edit, delete, search, filter, and manage bookmarks with on-device storage only. Creating an account is optional and is only offered from Settings when a user wants cloud sync or web access.
 
-Guideline 3.1.1: Premium on iPhone/iPad is unlocked exclusively through Apple In-App Purchase (StoreKit). We removed using server-side flags to grant premium on iOS.
+Guideline 3.1.1: Premium on iPhone/iPad is unlocked exclusively through Apple In-App Purchase (StoreKit). We removed using server-side flags to grant premium on iOS, and subscription management now uses StoreKit's native App Store subscription management sheet instead of opening an external purchase or subscription URL.
 
 Privacy policy updated (same URL): https://muartdev.github.io/mindshelf-privacy/
+
+Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
 ---

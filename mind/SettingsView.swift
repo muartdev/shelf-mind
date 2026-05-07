@@ -34,6 +34,7 @@ struct SettingsView: View {
     @State private var showingPaywall = false
     @State private var showingPaywallForTheme = false
     @State private var showingPremiumDetails = false
+    @State private var subscriptionManagementError: String?
 
     private var appVersion: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
@@ -77,13 +78,21 @@ struct SettingsView: View {
             } message: {
                 Text(localization.localizedString("settings.delete.all.message"))
             }
-.confirmationDialog(localization.localizedString("settings.delete.account"), isPresented: $showingDeleteAccountConfirmation, titleVisibility: .visible) {
+            .confirmationDialog(localization.localizedString("settings.delete.account"), isPresented: $showingDeleteAccountConfirmation, titleVisibility: .visible) {
                 Button(localization.localizedString("settings.delete.confirm"), role: .destructive) {
                     deleteAccount()
                 }
                 Button(localization.localizedString("common.cancel"), role: .cancel) { }
             } message: {
                 Text(localization.localizedString("settings.delete.account.message"))
+            }
+            .alert("App Store", isPresented: Binding(
+                get: { subscriptionManagementError != nil },
+                set: { if !$0 { subscriptionManagementError = nil } }
+            )) {
+                Button(localization.localizedString("common.done"), role: .cancel) { }
+            } message: {
+                Text(subscriptionManagementError ?? "")
             }
         }
     }
@@ -128,7 +137,7 @@ struct SettingsView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Button {
-                    authManager.exitGuestMode()
+                    authManager.requestAccountSignIn()
                 } label: {
                     Text(localization.localizedString("settings.signin.cta"))
                         .font(.subheadline.weight(.semibold))
@@ -234,7 +243,7 @@ struct SettingsView: View {
 
             Divider()
 
-            Link(destination: URL(string: "https://muartdev.github.io/mindshelf-privacy/")!) {
+            Link(destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!) {
                 HStack {
                     Label(localization.localizedString("settings.terms"), systemImage: "doc.text.fill")
                     Spacer()
@@ -519,7 +528,7 @@ struct SettingsView: View {
                                             HStack {
                                                 Text(localization.localizedString("settings.premium.manage"))
                                                     .fontWeight(.semibold)
-                                                Image(systemName: "arrow.up.right")
+                                                Image(systemName: "slider.horizontal.3")
                                             }
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 12)
@@ -552,8 +561,23 @@ struct SettingsView: View {
     }
     
     private func openSubscriptionManagement() {
-        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
-            UIApplication.shared.open(url)
+        Task {
+            guard AppStoreReviewPolicy.subscriptionManagementPresentation == .nativeAppStoreSheet else {
+                return
+            }
+
+            guard let windowScene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }) else {
+                subscriptionManagementError = localization.localizedString("settings.premium.manage.unavailable")
+                return
+            }
+
+            do {
+                try await AppStore.showManageSubscriptions(in: windowScene)
+            } catch {
+                subscriptionManagementError = localization.localizedString("settings.premium.manage.unavailable")
+            }
         }
     }
     

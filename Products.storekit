@@ -1,6 +1,6 @@
 {
   "appPolicies" : {
-    "eula" : "https://muartdev.github.io/mindshelf-privacy/",
+    "eula" : "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
     "policies" : [
       {
         "locale" : "en_US",

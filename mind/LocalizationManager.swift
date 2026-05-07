@@ -333,6 +333,7 @@ struct LocalizedStrings {
         // Premium Management
         "settings.premium.manage": "Manage Subscription",
         "settings.premium.manage.desc": "View and manage your subscription on App Store",
+        "settings.premium.manage.unavailable": "Subscription management is available from your App Store account settings.",
         "settings.premium.benefits": "Premium Benefits",
         "settings.premium.status.active": "Active",
         "settings.premium.status.cancelled": "Cancelled",
@@ -627,6 +628,7 @@ struct LocalizedStrings {
         // Premium Management
         "settings.premium.manage": "Aboneliği Yönet",
         "settings.premium.manage.desc": "App Store üzerinden aboneliğinizi dondurun veya iptal edin",
+        "settings.premium.manage.unavailable": "Abonelik yönetimine App Store hesap ayarlarınızdan ulaşabilirsiniz.",
         "settings.premium.benefits": "Premium Avantajları",
         "settings.premium.status.active": "Aktif",
         "settings.premium.status.cancelled": "İptal Edildi",

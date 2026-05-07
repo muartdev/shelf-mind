@@ -22,6 +22,7 @@ final class AuthManager {
     var needsEmailConfirmation = false
     var pendingEmail: String?
     var infoKey: String?
+    var isRequestingAccountSignIn = false
     
     private let supabase = SupabaseManager.shared
     
@@ -32,6 +33,7 @@ final class AuthManager {
 
     /// Use the app with on-device bookmarks only; sign in later for sync.
     func continueAsGuest() {
+        isRequestingAccountSignIn = false
         isGuestMode = true
         UserDefaults.standard.set(true, forKey: guestModeKey)
         let group = UserDefaults(suiteName: "group.com.muartdev.mind")
@@ -43,6 +45,11 @@ final class AuthManager {
         UserDefaults.standard.removeObject(forKey: guestModeKey)
         let group = UserDefaults(suiteName: "group.com.muartdev.mind")
         group?.removeObject(forKey: guestModeKey)
+    }
+
+    func requestAccountSignIn() {
+        exitGuestMode()
+        isRequestingAccountSignIn = true
     }
     
     private func setupLanguageSync() {
@@ -67,6 +74,7 @@ final class AuthManager {
             let user = try await supabase.signIn(email: email, password: password)
             currentUser = user
             isAuthenticated = true
+            isRequestingAccountSignIn = false
             saveSession(userId: user.id.uuidString, email: user.email, name: user.name)
             exitGuestMode()
 
@@ -112,6 +120,7 @@ final class AuthManager {
             }
             
             isAuthenticated = true
+            isRequestingAccountSignIn = false
             saveSession(userId: result.user.id.uuidString, email: result.user.email, name: result.user.name)
             exitGuestMode()
 
@@ -128,11 +137,12 @@ final class AuthManager {
 
         currentUser = nil
         isAuthenticated = false
-        exitGuestMode()
+        isRequestingAccountSignIn = false
         needsEmailConfirmation = false
         pendingEmail = nil
         infoKey = nil
         clearSession()
+        continueAsGuest()
     }
     
     func deleteAccount() async {
@@ -162,6 +172,7 @@ final class AuthManager {
             if let user = try await supabase.getCurrentUser() {
                 currentUser = user
                 isAuthenticated = true
+                isRequestingAccountSignIn = false
                 needsEmailConfirmation = false
                 pendingEmail = nil
                 infoKey = nil
@@ -237,6 +248,7 @@ final class AuthManager {
             if let user = try await supabase.getCurrentUser() {
                 currentUser = user
                 isAuthenticated = true
+                isRequestingAccountSignIn = false
                 needsEmailConfirmation = false
                 pendingEmail = nil
                 saveSession(userId: user.id.uuidString, email: user.email, name: user.name)

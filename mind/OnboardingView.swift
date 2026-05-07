@@ -9,6 +9,7 @@ import SwiftUI
 
 struct OnboardingView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthManager.self) private var authManager
     @Environment(ThemeManager.self) private var themeManager
     @Environment(LocalizationManager.self) private var localization
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
@@ -150,6 +151,7 @@ struct OnboardingView: View {
     }
     
     private func completeOnboarding() {
+        authManager.continueAsGuest()
         hasCompletedOnboarding = true
         dismiss()
     }
@@ -164,5 +166,6 @@ struct OnboardingPage {
 
 #Preview {
     OnboardingView()
+        .environment(AuthManager())
         .environment(ThemeManager())
 }
