@@ -345,7 +345,7 @@ struct LocalizedStrings {
 
         // Privacy & Terms
         "settings.privacy.policy": "Privacy Policy",
-        "settings.terms": "Terms of Service",
+        "settings.terms": "Terms of Use (EULA)",
 
         // Notifications
         "notification.daily.body": "Check out your bookmarks and catch up on your reading!",
@@ -642,7 +642,7 @@ struct LocalizedStrings {
 
         // Privacy & Terms
         "settings.privacy.policy": "Gizlilik Politikası",
-        "settings.terms": "Kullanım Koşulları",
+        "settings.terms": "Kullanım Koşulları (EULA)",
 
         // Notifications
         "notification.daily.body": "Yer imlerini kontrol et ve okumalarına devam et!",
