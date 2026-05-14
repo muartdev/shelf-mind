@@ -22,6 +22,13 @@ struct PaywallView: View {
     private var selectedProduct: Product? {
         paywall.products.first { $0.id == selectedProductID.rawValue }
     }
+
+    private var canStartPremium: Bool {
+        !isPurchasing &&
+        !paywall.isLoading &&
+        !paywall.products.isEmpty &&
+        selectedProduct != nil
+    }
     
     var body: some View {
         NavigationStack {
@@ -145,19 +152,11 @@ struct PaywallView: View {
                         ProgressView(localization.localizedString("paywall.loading"))
                             .padding()
                     } else {
-                        VStack(spacing: 12) {
-                            Text(localization.localizedString("paywall.error"))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            
-                            Button(localization.localizedString("paywall.retry")) {
-                                Task {
-                                    await paywall.loadProducts()
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                        .padding()
+                        Text(localization.localizedString("paywall.unavailable"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding()
                     }
                 } else {
                     // Sort order: Yearly, Monthly, Lifetime
@@ -243,8 +242,8 @@ struct PaywallView: View {
                         .strokeBorder(.primary.opacity(0.15), lineWidth: 1)
                 )
             }
-            .disabled(isPurchasing || selectedProduct == nil)
-            .opacity(isPurchasing ? 0.8 : 1.0)
+            .disabled(!canStartPremium)
+            .opacity(canStartPremium ? 1.0 : 0.7)
             .scaleEffect(selectedProduct != nil ? 1.02 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedProduct != nil)
             .shadow(
@@ -279,22 +278,30 @@ struct PaywallView: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
 
-            Text(localization.localizedString("paywall.cancel.anytime"))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            VStack(spacing: 8) {
+                Text(localization.localizedString("paywall.subscription.disclosure"))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                    .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 16) {
-                Link(localization.localizedString("settings.privacy.policy"), destination: URL(string: "https://muartdev.github.io/mindshelf-privacy/")!)
+                HStack(spacing: 6) {
+                    Link(localization.localizedString("settings.terms"), destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                        .font(.footnote.weight(.semibold))
+                        .underline()
+                        .foregroundStyle(.blue)
 
-                Text("|")
-                    .foregroundStyle(.secondary.opacity(0.5))
+                    Text("·")
+                        .foregroundStyle(.secondary)
 
-                Link(localization.localizedString("settings.terms"), destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                    Link(localization.localizedString("settings.privacy.policy"), destination: URL(string: "https://muartdev.github.io/mindshelf-privacy/")!)
+                        .font(.footnote.weight(.semibold))
+                        .underline()
+                        .foregroundStyle(.blue)
+                }
+                .padding(.top, 4)
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
         }
     }
     

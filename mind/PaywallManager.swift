@@ -116,11 +116,22 @@ final class PaywallManager {
     // MARK: - Load Products
     
     func loadProducts() async {
+        isLoading = true
+        purchaseError = nil
+        defer { isLoading = false }
+
         do {
             let productIDs: [ProductID] = [.monthly, .yearly, .lifetime]
-            products = try await Product.products(for: productIDs.map { $0.rawValue })
+            let loadedProducts = try await Product.products(for: productIDs.map { $0.rawValue })
+            products = loadedProducts
+
+            // Keep product list deterministic in UI even if StoreKit returns partial data.
+            if loadedProducts.isEmpty {
+                purchaseError = "Failed to load products"
+            }
         } catch {
             purchaseError = "Failed to load products"
+            products = []
         }
     }
     

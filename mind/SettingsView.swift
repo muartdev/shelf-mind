@@ -268,7 +268,7 @@ struct SettingsView: View {
                     }
                 )) {
                     ForEach(LocalizationManager.AppLanguage.allCases) { language in
-                        Text("\(language.flag) \(language.rawValue)").tag(language)
+                        Text(language.rawValue).tag(language)
                     }
                 }
                 .pickerStyle(.menu)
